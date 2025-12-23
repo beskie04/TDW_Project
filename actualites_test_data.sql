@@ -1,0 +1,41 @@
+-- Données de test pour actualités
+INSERT INTO actualites (titre, type, description, image, lien, date_publication, actif, ordre_affichage) VALUES
+('Nouveau Projet de Recherche en IA', 'projet', 
+ 'Lancement d\'un projet innovant sur l\'intelligence artificielle appliquée à la cybersécurité. Ce projet vise à développer des systèmes intelligents de détection d\'intrusions.', 
+ NULL, 
+ '?page=projets&action=details&id=1', 
+ NOW(), 
+ 1, 
+ 1),
+
+('Publication dans une Revue Internationale', 'publication', 
+ 'Notre équipe a publié un article dans une revue prestigieuse sur les techniques d\'optimisation énergétique dans les réseaux IoT. Une avancée majeure dans le domaine.', 
+ NULL, 
+ '?page=publications', 
+ NOW(), 
+ 1, 
+ 2),
+
+('Séminaire International sur le Cloud Computing', 'evenement', 
+ 'Organisation d\'un séminaire international réunissant des experts du cloud computing et des systèmes distribués. Inscriptions ouvertes dès maintenant.', 
+ NULL, 
+ '?page=contact', 
+ NOW(), 
+ 1, 
+ 3),
+
+('Soutenance de Thèse en Machine Learning', 'soutenance', 
+ 'Soutenance de thèse de doctorat sur les nouvelles approches en machine learning pour l\'analyse prédictive des données massives. Venez nombreux assister à cette présentation.', 
+ NULL, 
+ NULL, 
+ NOW(), 
+ 1, 
+ 4),
+
+('Collaboration avec une Université Européenne', 'projet', 
+ 'Signature d\'un accord de coopération avec une université européenne de renom pour des échanges académiques et des projets de recherche conjoints dans le domaine de la cybersécurité.', 
+ NULL, 
+ '?page=membres', 
+ NOW(), 
+ 1, 
+ 5);
