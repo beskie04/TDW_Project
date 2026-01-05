@@ -1,9 +1,24 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
+// Import Generic Framework Components
+require_once __DIR__ . '/components/TextBlock.php';
+require_once __DIR__ . '/components/Section.php';
+require_once __DIR__ . '/components/Grid.php';
+require_once __DIR__ . '/components/Card.php';
+require_once __DIR__ . '/components/Badge.php';
+require_once __DIR__ . '/components/Avatar.php';
+require_once __DIR__ . '/components/Button.php';
+require_once __DIR__ . '/components/Breadcrumb.php';
+require_once __DIR__ . '/components/ProfileCard.php';
+require_once __DIR__ . '/components/Tag.php';
+require_once __DIR__ . '/components/ListContainer.php';
+require_once __DIR__ . '/components/Slider.php';
+require_once __DIR__ . '/components/Filter.php';
+require_once __DIR__ . '/components/FilterBar.php';
+
 class MembreView extends BaseView
 {
-
     public function __construct()
     {
         $this->currentPage = 'membres';
@@ -11,85 +26,287 @@ class MembreView extends BaseView
     }
 
     /**
-     * Page principale : Présentation, Organigramme et Équipes
+     * Main page: Presentation, Organization Chart, and Teams
      */
     public function renderIndex($equipes, $directeur)
     {
+        // Charger les thématiques et tous les membres
+        require_once __DIR__ . '/../models/ThematiqueModel.php';
+        require_once __DIR__ . '/../models/MembreModel.php';
+
+        $thematiqueModel = new ThematiqueModel();
+        $membreModel = new MembreModel();
+
+        $thematiques = $thematiqueModel->getAllActives();
+        $autresMembres = $membreModel->getAllExceptDirecteur();
+
         $this->renderHeader();
         $this->renderFlashMessage();
         ?>
 
         <main class="content-wrapper">
             <div class="container">
+                <!-- Page Header -->
                 <div class="page-header">
                     <h1><i class="fas fa-users"></i> Présentation, Organigramme et Équipes</h1>
                 </div>
 
-                <!-- Présentation du laboratoire -->
-                <section class="lab-presentation">
-                    <h2><i class="fas fa-flask"></i> Présentation du Laboratoire</h2>
-                    <p>
-                        Le Laboratoire de Recherche en Informatique de l'École Supérieure d'Informatique est un centre
-                        d'excellence
-                        dédié à l'innovation et à la recherche de pointe dans divers domaines de l'informatique. Nos équipes
-                        travaillent
-                        sur des problématiques actuelles telles que l'intelligence artificielle, la cybersécurité, le cloud
-                        computing,
-                        les réseaux et les systèmes embarqués.
-                    </p>
-                    <p>
-                        Fort d'une équipe de chercheurs expérimentés et de doctorants talentueux, le laboratoire collabore avec
-                        des partenaires académiques et industriels nationaux et internationaux pour produire des résultats de
-                        recherche
-                        de haut niveau et former la prochaine génération d'experts en informatique.
-                    </p>
-                </section>
+                <!-- Lab Presentation -->
+                <?php
+                TextBlock::render([
+                    'title' => 'Présentation du Laboratoire',
+                    'icon' => 'fas fa-flask',
+                    'content' => [
+                        'Le Laboratoire de Recherche en Informatique de l\'École Supérieure d\'Informatique est un centre d\'excellence dédié à l\'innovation et à la recherche de pointe dans divers domaines de l\'informatique. Nos équipes travaillent sur des problématiques actuelles telles que l\'intelligence artificielle, la cybersécurité, le cloud computing, les réseaux et les systèmes embarqués.',
+                        'Fort d\'une équipe de chercheurs expérimentés et de doctorants talentueux, le laboratoire collabore avec des partenaires académiques et industriels nationaux et internationaux pour produire des résultats de recherche de haut niveau et former la prochaine génération d\'experts en informatique.'
+                    ]
+                ]);
+                ?>
 
-                <!-- Organigramme -->
-                <section class="organigramme-section">
-                    <h2><i class="fas fa-sitemap"></i> Organigramme du Laboratoire</h2>
-
-                    <?php if ($directeur): ?>
-                        <div class="directeur-card">
-                            <div class="directeur-photo">
-                                <?php if ($directeur['photo']): ?>
-                                    <img src="<?= UPLOADS_URL . 'photos/' . $directeur['photo'] ?>"
-                                        alt="<?= htmlspecialchars($directeur['nom']) ?>">
-                                <?php else: ?>
-                                    <i class="fas fa-user"></i>
-                                <?php endif; ?>
+                <!-- Thématiques de recherche -->
+                <?php if (!empty($thematiques)): ?>
+                    <?php
+                    Section::render([
+                        'title' => 'Thématiques de Recherche',
+                        'icon' => 'fas fa-lightbulb'
+                    ], function () use ($thematiques) {
+                        echo '<div style="display: grid; gap: 1.5rem;">';
+                        foreach ($thematiques as $thematique) {
+                            ?>
+                            <div
+                                style="padding: 1.5rem; background: white; border-left: 4px solid var(--primary-color); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <h4 style="margin: 0 0 0.75rem 0; color: var(--primary-color); font-size: 1.1rem;">
+                                    <?= htmlspecialchars($thematique['nom_thematique']) ?>
+                                </h4>
+                                <p style="margin: 0; line-height: 1.6; color: var(--gray-700);">
+                                    <?= htmlspecialchars($thematique['description']) ?>
+                                </p>
                             </div>
-                            <div class="directeur-info">
-                                <h3><?= htmlspecialchars($directeur['nom'] . ' ' . $directeur['prenom']) ?></h3>
-                                <p class="directeur-poste"><?= htmlspecialchars($directeur['poste']) ?></p>
-                                <p class="directeur-grade"><?= htmlspecialchars($directeur['grade']) ?></p>
-                                <p class="directeur-email"><i class="fas fa-envelope"></i>
-                                    <?= htmlspecialchars($directeur['email']) ?></p>
-                                <div class="directeur-actions">
-                                    <a href="?page=membres&action=biographie&id=<?= $directeur['id_membre'] ?>"
-                                        class="btn-secondary">
-                                        <i class="fas fa-user"></i> Biographie
-                                    </a>
-                                    <a href="?page=membres&action=publications&id=<?= $directeur['id_membre'] ?>"
-                                        class="btn-secondary">
-                                        <i class="fas fa-file-alt"></i> Publications
-                                    </a>
-                                </div>
+                            <?php
+                        }
+                        echo '</div>';
+                    });
+                    ?>
+                <?php endif; ?>
+
+                <!-- Liste des noms d'équipes -->
+                <?php
+                Section::render([
+                    'title' => 'Nos Équipes de Recherche',
+                    'icon' => 'fas fa-users-cog'
+                ], function () use ($equipes) {
+                    echo '<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">';
+                    foreach ($equipes as $equipe) {
+                        Tag::render([
+                            'text' => $equipe['nom'],
+                            'href' => '?page=membres&action=equipe&id=' . $equipe['id'],
+                            'variant' => 'primary',
+                            'size' => 'large'
+                        ]);
+                    }
+                    echo '</div>';
+                });
+                ?>
+
+                <!-- Organigramme avec Directeur + Slider -->
+                <?php
+                Section::render([
+                    'title' => 'Organigramme du Laboratoire',
+                    'icon' => 'fas fa-sitemap'
+                ], function () use ($directeur, $autresMembres) {
+                    // Directeur
+                    if ($directeur) {
+                        $photoUrl = $directeur['photo'] ? UPLOADS_URL . 'photos/' . $directeur['photo'] : null;
+
+                        echo '<div style="margin-bottom: 3rem;">';
+                        ProfileCard::render([
+                            'photo' => $photoUrl,
+                            'name' => $directeur['nom'] . ' ' . $directeur['prenom'],
+                            'title' => $directeur['poste'],
+                            'subtitle' => $directeur['grade'],
+                            'email' => $directeur['email'],
+                            'layout' => 'horizontal',
+                            'size' => 'large',
+                            'actions' => [
+                                [
+                                    'text' => 'Biographie',
+                                    'icon' => 'fas fa-user',
+                                    'href' => '?page=membres&action=biographie&id=' . $directeur['id_membre']
+                                ],
+                                [
+                                    'text' => 'Publications',
+                                    'icon' => 'fas fa-file-alt',
+                                    'href' => '?page=membres&action=publications&id=' . $directeur['id_membre']
+                                ]
+                            ]
+                        ]);
+                        echo '</div>';
+                    }
+
+                    // Slider compact - 3 membres par slide
+                    if (!empty($autresMembres)) {
+                        echo '<div style="margin-top: 2rem;">';
+                        echo '<h3 style="margin-bottom: 1.5rem; color: var(--dark-color); font-size: 1.5rem;"><i class="fas fa-users" style="margin-right: 0.5rem;"></i>Membres du Laboratoire</h3>';
+
+                        // Diviser les membres en groupes de 3
+                        $membresChunks = array_chunk($autresMembres, 3);
+                        $slides = [];
+
+                        foreach ($membresChunks as $chunk) {
+                            $slideHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; padding: 2rem;">';
+
+                            foreach ($chunk as $membre) {
+                                $membrePhotoUrl = $membre['photo'] ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
+
+                                $slideHtml .= '<div class="card" style="text-align: center; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">';
+                                $slideHtml .= '<div class="card-content" style="padding: 1.5rem;">';
+
+                                // Photo
+                                $slideHtml .= '<div style="display: flex; justify-content: center; margin-bottom: 1rem;">';
+                                if ($membrePhotoUrl) {
+                                    $slideHtml .= '<img src="' . htmlspecialchars($membrePhotoUrl) . '" alt="' . htmlspecialchars($membre['nom']) . '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color);">';
+                                } else {
+                                    $slideHtml .= '<div style="width: 100px; height: 100px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;"><i class="fas fa-user"></i></div>';
+                                }
+                                $slideHtml .= '</div>';
+
+                                // Info
+                                $slideHtml .= '<h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--dark-color);">';
+                                $slideHtml .= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']);
+                                $slideHtml .= '</h4>';
+
+                                if (!empty($membre['poste'])) {
+                                    $slideHtml .= '<p style="margin: 0 0 0.25rem 0; color: var(--primary-color); font-weight: 600; font-size: 0.9rem;">';
+                                    $slideHtml .= htmlspecialchars($membre['poste']);
+                                    $slideHtml .= '</p>';
+                                }
+
+                                if (!empty($membre['grade'])) {
+                                    $slideHtml .= '<p style="margin: 0; color: var(--gray-600); font-size: 0.85rem;">';
+                                    $slideHtml .= htmlspecialchars($membre['grade']);
+                                    $slideHtml .= '</p>';
+                                }
+
+                                // Actions
+                                $slideHtml .= '<div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">';
+                                $slideHtml .= '<a href="?page=membres&action=biographie&id=' . $membre['id_membre'] . '" title="Biographie" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;"><i class="fas fa-user"></i></a>';
+                                $slideHtml .= '<a href="?page=membres&action=publications&id=' . $membre['id_membre'] . '" title="Publications" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;"><i class="fas fa-file-alt"></i></a>';
+                                $slideHtml .= '</div>';
+
+                                $slideHtml .= '</div></div>';
+                            }
+
+                            $slideHtml .= '</div>';
+
+                            $slides[] = [
+                                'title' => '',
+                                'description' => $slideHtml
+                            ];
+                        }
+
+                        // Render slider
+                        ?>
+                        <div class="membres-slider"
+                            style="position: relative; background: var(--gray-50); border-radius: 12px; overflow: hidden;">
+                            <div class="slider-container" style="position: relative;">
+                                <?php foreach ($slides as $index => $slide): ?>
+                                    <div class="slider-slide <?= $index === 0 ? 'active' : '' ?>"
+                                        style="display: <?= $index === 0 ? 'block' : 'none' ?>;">
+                                        <?= $slide['description'] ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <!-- Controls -->
+                            <div
+                                style="position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 1rem; pointer-events: none;">
+                                <button class="slider-prev-membres"
+                                    style="pointer-events: all; width: 45px; height: 45px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 1.2rem; transition: all 0.3s ease;">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="slider-next-membres"
+                                    style="pointer-events: all; width: 45px; height: 45px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 1.2rem; transition: all 0.3s ease;">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <!-- Dots -->
+                            <div style="text-align: center; padding: 1.5rem 0;">
+                                <?php foreach ($slides as $index => $slide): ?>
+                                    <span class="slider-dot-membres <?= $index === 0 ? 'active' : '' ?>" data-slide="<?= $index ?>"
+                                        style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: <?= $index === 0 ? 'var(--primary-color)' : 'var(--gray-300)' ?>; margin: 0 0.25rem; cursor: pointer; transition: all 0.3s ease;"></span>
+                                <?php endforeach; ?>
                             </div>
                         </div>
-                    <?php endif; ?>
-                </section>
 
-                <!-- Équipes de recherche -->
-                <section class="equipes-section">
-                    <h2><i class="fas fa-users-cog"></i> Équipes de Recherche</h2>
+                        <script>
+                            (function () {
+                                let currentSlide = 0;
+                                const slides = document.querySelectorAll('.membres-slider .slider-slide');
+                                const dots = document.querySelectorAll('.slider-dot-membres');
+                                const total = slides.length;
 
-                    <div class="equipes-grid">
-                        <?php foreach ($equipes as $equipe): ?>
-                            <?php $this->renderEquipeCard($equipe); ?>
-                        <?php endforeach; ?>
-                    </div>
-                </section>
+                                function showSlide(n) {
+                                    slides.forEach(s => s.style.display = 'none');
+                                    dots.forEach(d => {
+                                        d.classList.remove('active');
+                                        d.style.background = 'var(--gray-300)';
+                                    });
+
+                                    currentSlide = (n + total) % total;
+                                    slides[currentSlide].style.display = 'block';
+                                    dots[currentSlide].classList.add('active');
+                                    dots[currentSlide].style.background = 'var(--primary-color)';
+                                }
+
+                                document.querySelector('.slider-next-membres')?.addEventListener('click', () => {
+                                    showSlide(currentSlide + 1);
+                                });
+
+                                document.querySelector('.slider-prev-membres')?.addEventListener('click', () => {
+                                    showSlide(currentSlide - 1);
+                                });
+
+                                dots.forEach((dot, i) => {
+                                    dot.addEventListener('click', () => showSlide(i));
+                                });
+
+                                // Auto-play
+                                setInterval(() => showSlide(currentSlide + 1), 6000);
+                            })();
+                        </script>
+                        <?php
+
+                        // Bouton d'action
+                        echo '<div style="text-align: center; margin-top: 2rem;">';
+
+                        Button::render([
+                            'text' => 'Voir tous les membres',
+                            'icon' => 'fas fa-users',
+                            'variant' => 'primary',
+                            'href' => '?page=membres&action=tous',
+                            'size' => 'large'
+                        ]);
+
+                        echo '</div>';
+                        echo '</div>';
+                    }
+                });
+                ?>
+
+                <!-- Research Teams (Cards) -->
+                <?php
+                Section::render([
+                    'title' => 'Détails des Équipes',
+                    'icon' => 'fas fa-users-cog'
+                ], function () use ($equipes) {
+                    Grid::render(['minWidth' => '350px', 'gap' => '2rem'], function () use ($equipes) {
+                        foreach ($equipes as $equipe) {
+                            $this->renderEquipeCard($equipe);
+                        }
+                    });
+                });
+                ?>
             </div>
         </main>
 
@@ -98,47 +315,75 @@ class MembreView extends BaseView
     }
 
     /**
-     * Carte d'équipe
+     * Render team card
      */
     private function renderEquipeCard($equipe)
     {
+        $chefPhotoUrl = $equipe['chef_photo'] ? UPLOADS_URL . 'photos/' . $equipe['chef_photo'] : null;
         ?>
-        <div class="equipe-card">
-            <div class="equipe-header">
-                <h3><?= htmlspecialchars($equipe['nom']) ?></h3>
-                <span class="membre-count"><?= $equipe['nb_membres'] ?> membres</span>
+        <div class="card">
+            <!-- Header -->
+            <div
+                style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 1.35rem; color: var(--dark-color);">
+                    <?= htmlspecialchars($equipe['nom']) ?>
+                </h3>
+                <?php
+                Badge::render([
+                    'text' => $equipe['nb_membres'] . ' membres',
+                    'variant' => 'info',
+                    'size' => 'small'
+                ]);
+                ?>
             </div>
 
-            <p class="equipe-description"><?= htmlspecialchars($equipe['description'] ?? '') ?></p>
+            <!-- Content -->
+            <div class="card-content">
+                <p class="card-description">
+                    <?= htmlspecialchars($equipe['description'] ?? '') ?>
+                </p>
 
-            <?php if ($equipe['chef_nom']): ?>
-                <div class="equipe-chef">
-                    <div class="chef-photo-small">
-                        <?php if ($equipe['chef_photo']): ?>
-                            <img src="<?= UPLOADS_URL . 'photos/' . $equipe['chef_photo'] ?>"
-                                alt="<?= htmlspecialchars($equipe['chef_nom']) ?>">
-                        <?php else: ?>
-                            <i class="fas fa-user"></i>
-                        <?php endif; ?>
+                <?php if ($equipe['chef_nom']): ?>
+                    <!-- Team Leader -->
+                    <div
+                        style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--gray-50, #f9fafb); border-radius: 8px; margin-top: 1rem;">
+                        <?php
+                        Avatar::render([
+                            'src' => $chefPhotoUrl,
+                            'alt' => $equipe['chef_nom'],
+                            'size' => 'medium'
+                        ]);
+                        ?>
+                        <div>
+                            <strong style="display: block; color: var(--gray-500); font-size: 0.85rem; margin-bottom: 0.25rem;">
+                                Chef d'équipe
+                            </strong>
+                            <p style="margin: 0; color: var(--dark-color); font-weight: 600;">
+                                <?= htmlspecialchars($equipe['chef_nom'] . ' ' . $equipe['chef_prenom']) ?>
+                            </p>
+                        </div>
                     </div>
-                    <div class="chef-info">
-                        <strong>Chef d'équipe :</strong>
-                        <p><?= htmlspecialchars($equipe['chef_nom'] . ' ' . $equipe['chef_prenom']) ?></p>
-                    </div>
+                <?php endif; ?>
+
+                <!-- Action -->
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
+                    <?php
+                    Button::render([
+                        'text' => 'Voir l\'équipe',
+                        'icon' => 'fas fa-arrow-right',
+                        'variant' => 'primary',
+                        'href' => '?page=membres&action=equipe&id=' . $equipe['id'],
+                        'block' => true
+                    ]);
+                    ?>
                 </div>
-            <?php endif; ?>
-
-            <div class="equipe-actions">
-                <a href="?page=membres&action=equipe&id=<?= $equipe['id'] ?>" class="btn-primary">
-                    <i class="fas fa-arrow-right"></i> Voir l'équipe
-                </a>
             </div>
         </div>
         <?php
     }
 
     /**
-     * Page détails d'une équipe
+     * Team details page
      */
     public function renderEquipe($equipe, $membres, $publications)
     {
@@ -149,75 +394,95 @@ class MembreView extends BaseView
 
         <main class="content-wrapper">
             <div class="container">
-                <div class="breadcrumb">
-                    <a href="?page=accueil">Accueil</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="?page=membres">Membres</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <span><?= htmlspecialchars($equipe['nom']) ?></span>
+                <!-- Breadcrumb -->
+                <?php
+                Breadcrumb::render([
+                    ['text' => 'Accueil', 'url' => '?page=accueil'],
+                    ['text' => 'Membres', 'url' => '?page=membres'],
+                    ['text' => $equipe['nom']]
+                ]);
+                ?>
+
+                <!-- Team Header -->
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: 2.5rem; margin-bottom: 0.75rem; color: var(--dark-color);">
+                        <?= htmlspecialchars($equipe['nom']) ?>
+                    </h1>
+                    <p style="font-size: 1.1rem; color: var(--gray-600); line-height: 1.6;">
+                        <?= htmlspecialchars($equipe['description'] ?? '') ?>
+                    </p>
                 </div>
 
-                <div class="equipe-details">
-                    <div class="equipe-details-header">
-                        <h1><?= htmlspecialchars($equipe['nom']) ?></h1>
-                        <p class="equipe-description"><?= htmlspecialchars($equipe['description'] ?? '') ?></p>
-                    </div>
+                <!-- Team Leader -->
+                <?php if ($equipe['chef_nom']): ?>
+                    <?php
+                    Section::render([
+                        'title' => 'Chef d\'équipe',
+                        'icon' => 'fas fa-user-tie'
+                    ], function () use ($equipe) {
+                        $chefPhotoUrl = $equipe['chef_photo'] ? UPLOADS_URL . 'photos/' . $equipe['chef_photo'] : null;
 
-                    <!-- Chef d'équipe -->
-                    <?php if ($equipe['chef_nom']): ?>
-                        <div class="chef-section">
-                            <h2><i class="fas fa-user-tie"></i> Chef d'équipe</h2>
-                            <div class="membre-card-horizontal">
-                                <div class="membre-photo">
-                                    <?php if ($equipe['chef_photo']): ?>
-                                        <img src="<?= UPLOADS_URL . 'photos/' . $equipe['chef_photo'] ?>"
-                                            alt="<?= htmlspecialchars($equipe['chef_nom']) ?>">
-                                    <?php else: ?>
-                                        <i class="fas fa-user"></i>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="membre-info">
-                                    <h3><?= htmlspecialchars($equipe['chef_nom'] . ' ' . $equipe['chef_prenom']) ?></h3>
-                                    <p class="membre-grade"><?= htmlspecialchars($equipe['chef_grade'] ?? '') ?></p>
-                                    <p class="membre-email"><i class="fas fa-envelope"></i>
-                                        <?= htmlspecialchars($equipe['chef_email']) ?></p>
-                                    <div class="membre-actions">
-                                        <a href="?page=membres&action=biographie&id=<?= $equipe['chef_id'] ?>"
-                                            class="btn-secondary">
-                                            <i class="fas fa-user"></i> Biographie
-                                        </a>
-                                        <a href="?page=membres&action=publications&id=<?= $equipe['chef_id'] ?>"
-                                            class="btn-secondary">
-                                            <i class="fas fa-file-alt"></i> Publications
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                        ProfileCard::render([
+                            'photo' => $chefPhotoUrl,
+                            'name' => $equipe['chef_nom'] . ' ' . $equipe['chef_prenom'],
+                            'subtitle' => $equipe['chef_grade'] ?? '',
+                            'email' => $equipe['chef_email'],
+                            'layout' => 'horizontal',
+                            'size' => 'medium',
+                            'actions' => [
+                                [
+                                    'text' => 'Biographie',
+                                    'icon' => 'fas fa-user',
+                                    'href' => '?page=membres&action=biographie&id=' . $equipe['chef_id']
+                                ],
+                                [
+                                    'text' => 'Publications',
+                                    'icon' => 'fas fa-file-alt',
+                                    'href' => '?page=membres&action=publications&id=' . $equipe['chef_id']
+                                ]
+                            ]
+                        ]);
+                    });
+                    ?>
+                <?php endif; ?>
 
-                    <!-- Membres de l'équipe -->
-                    <div class="membres-section">
-                        <h2><i class="fas fa-users"></i> Membres de l'équipe</h2>
-                        <div class="membres-grid">
-                            <?php foreach ($membres as $membre): ?>
-                                <?php if ($membre['id_membre'] != $equipe['chef_id']): // Ne pas afficher le chef deux fois ?>
-                                    <?php $this->renderMembreCard($membre); ?>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
+                <!-- Team Members -->
+                <?php
+                Section::render([
+                    'title' => 'Membres de l\'équipe',
+                    'icon' => 'fas fa-users'
+                ], function () use ($membres, $equipe) {
+                    Grid::render(['minWidth' => '280px', 'gap' => '1.5rem'], function () use ($membres, $equipe) {
+                        foreach ($membres as $membre) {
+                            // Don't display team leader twice
+                            if ($membre['id_membre'] != $equipe['chef_id']) {
+                                $this->renderMembreCard($membre);
+                            }
+                        }
+                    });
+                });
+                ?>
 
-                    <!-- Publications de l'équipe -->
-                    <?php if (!empty($publications)): ?>
-                        <div class="publications-section">
-                            <h2><i class="fas fa-file-alt"></i> Publications de l'équipe</h2>
-                            <a href="?page=publications&equipe=<?= $equipe['id'] ?>" class="btn-primary">
-                                <i class="fas fa-arrow-right"></i> Voir toutes les publications
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <!-- Team Publications -->
+                <!-- Team Publications -->
+                <?php
+                Section::render([
+                    'title' => 'Publications de l\'équipe',
+                    'icon' => 'fas fa-file-alt'
+                ], function () use ($equipe) {
+                    echo '<div style="text-align: center;">';
+
+                    Button::render([
+                        'text' => 'Voir toutes les publications de l\'équipe',
+                        'icon' => 'fas fa-arrow-right',
+                        'variant' => 'primary',
+                        'href' => '?page=membres&action=publications-equipe&id=' . $equipe['id']
+                    ]);
+
+                    echo '</div>';
+                });
+                ?>
+
             </div>
         </main>
 
@@ -226,28 +491,49 @@ class MembreView extends BaseView
     }
 
     /**
-     * Carte de membre
+     * Render member card
      */
     private function renderMembreCard($membre)
     {
+        $photoUrl = $membre['photo'] ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
         ?>
-        <div class="membre-card">
-            <div class="membre-photo">
-                <?php if ($membre['photo']): ?>
-                    <img src="<?= UPLOADS_URL . 'photos/' . $membre['photo'] ?>" alt="<?= htmlspecialchars($membre['nom']) ?>">
-                <?php else: ?>
-                    <i class="fas fa-user"></i>
+        <div class="card" style="text-align: center;">
+            <div class="card-content">
+                <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+                    <?php
+                    Avatar::render([
+                        'src' => $photoUrl,
+                        'alt' => $membre['nom'] . ' ' . $membre['prenom'],
+                        'size' => 'large'
+                    ]);
+                    ?>
+                </div>
+
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--dark-color);">
+                    <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
+                </h4>
+
+                <?php if (!empty($membre['poste'])): ?>
+                    <p style="margin: 0 0 0.25rem 0; color: var(--primary-color); font-weight: 600; font-size: 0.9rem;">
+                        <?= htmlspecialchars($membre['poste']) ?>
+                    </p>
                 <?php endif; ?>
-            </div>
-            <div class="membre-info">
-                <h4><?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?></h4>
-                <p class="membre-poste"><?= htmlspecialchars($membre['poste'] ?? '') ?></p>
-                <p class="membre-grade"><?= htmlspecialchars($membre['grade'] ?? '') ?></p>
-                <div class="membre-actions">
-                    <a href="?page=membres&action=biographie&id=<?= $membre['id_membre'] ?>" title="Biographie">
+
+                <?php if (!empty($membre['grade'])): ?>
+                    <p style="margin: 0; color: var(--gray-600); font-size: 0.85rem;">
+                        <?= htmlspecialchars($membre['grade']) ?>
+                    </p>
+                <?php endif; ?>
+
+                <!-- Actions -->
+                <div
+                    style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
+                    <a href="?page=membres&action=biographie&id=<?= $membre['id_membre'] ?>" title="Biographie"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;">
                         <i class="fas fa-user"></i>
                     </a>
-                    <a href="?page=membres&action=publications&id=<?= $membre['id_membre'] ?>" title="Publications">
+                    <a href="?page=membres&action=publications&id=<?= $membre['id_membre'] ?>" title="Publications"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;">
                         <i class="fas fa-file-alt"></i>
                     </a>
                 </div>
@@ -257,7 +543,7 @@ class MembreView extends BaseView
     }
 
     /**
-     * Page biographie d'un membre
+     * Member biography page
      */
     public function renderBiographie($membre, $equipes, $publications)
     {
@@ -267,67 +553,94 @@ class MembreView extends BaseView
 
         <main class="content-wrapper">
             <div class="container">
-                <div class="breadcrumb">
-                    <a href="?page=accueil">Accueil</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="?page=membres">Membres</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <span><?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?></span>
-                </div>
+                <!-- Breadcrumb -->
+                <?php
+                Breadcrumb::render([
+                    ['text' => 'Accueil', 'url' => '?page=accueil'],
+                    ['text' => 'Membres', 'url' => '?page=membres'],
+                    ['text' => $membre['nom'] . ' ' . $membre['prenom']]
+                ]);
+                ?>
 
-                <div class="membre-biographie">
-                    <div class="bio-header">
-                        <div class="bio-photo">
-                            <?php if ($membre['photo']): ?>
-                                <img src="<?= UPLOADS_URL . 'photos/' . $membre['photo'] ?>"
-                                    alt="<?= htmlspecialchars($membre['nom']) ?>">
-                            <?php else: ?>
-                                <i class="fas fa-user"></i>
-                            <?php endif; ?>
-                        </div>
-                        <div class="bio-info">
-                            <h1><?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?></h1>
-                            <p class="bio-poste"><?= htmlspecialchars($membre['poste'] ?? '') ?></p>
-                            <p class="bio-grade"><?= htmlspecialchars($membre['grade'] ?? '') ?></p>
-                            <p class="bio-email"><i class="fas fa-envelope"></i> <?= htmlspecialchars($membre['email']) ?></p>
-                        </div>
-                    </div>
+                <!-- Profile Header -->
+                <?php
+                $photoUrl = $membre['photo'] ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
 
-                    <div class="bio-content">
-                        <?php if ($membre['biographie']): ?>
-                            <section class="bio-section">
-                                <h2><i class="fas fa-user"></i> Biographie</h2>
-                                <p><?= nl2br(htmlspecialchars($membre['biographie'])) ?></p>
-                            </section>
-                        <?php endif; ?>
+                ProfileCard::render([
+                    'photo' => $photoUrl,
+                    'name' => $membre['nom'] . ' ' . $membre['prenom'],
+                    'title' => $membre['poste'] ?? '',
+                    'subtitle' => $membre['grade'] ?? '',
+                    'email' => $membre['email'],
+                    'layout' => 'horizontal',
+                    'size' => 'large',
+                    'cssClass' => 'bio-header'
+                ]);
+                ?>
 
-                        <?php if ($membre['domaine_recherche']): ?>
-                            <section class="bio-section">
-                                <h2><i class="fas fa-search"></i> Domaines de recherche</h2>
-                                <p><?= nl2br(htmlspecialchars($membre['domaine_recherche'])) ?></p>
-                            </section>
-                        <?php endif; ?>
+                <!-- Bio Content -->
+                <div style="margin-top: 2rem;">
+                    <?php if ($membre['biographie']): ?>
+                        <?php
+                        Section::render([
+                            'title' => 'Biographie',
+                            'icon' => 'fas fa-user'
+                        ], function () use ($membre) {
+                            echo '<div style="padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+                            echo '<p style="line-height: 1.8; color: var(--gray-700); margin: 0;">';
+                            echo nl2br(htmlspecialchars($membre['biographie']));
+                            echo '</p></div>';
+                        });
+                        ?>
+                    <?php endif; ?>
 
-                        <?php if (!empty($equipes)): ?>
-                            <section class="bio-section">
-                                <h2><i class="fas fa-users"></i> Équipes</h2>
-                                <div class="equipes-list">
-                                    <?php foreach ($equipes as $eq): ?>
-                                        <a href="?page=membres&action=equipe&id=<?= $eq['id'] ?>" class="equipe-badge">
-                                            <?= htmlspecialchars($eq['nom']) ?>
-                                        </a>
-                                    <?php endforeach; ?>
-                                </div>
-                            </section>
-                        <?php endif; ?>
+                    <?php if ($membre['domaine_recherche']): ?>
+                        <?php
+                        Section::render([
+                            'title' => 'Domaines de recherche',
+                            'icon' => 'fas fa-search'
+                        ], function () use ($membre) {
+                            echo '<div style="padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+                            echo '<p style="line-height: 1.8; color: var(--gray-700); margin: 0;">';
+                            echo nl2br(htmlspecialchars($membre['domaine_recherche']));
+                            echo '</p></div>';
+                        });
+                        ?>
+                    <?php endif; ?>
 
-                        <section class="bio-section">
-                            <h2><i class="fas fa-file-alt"></i> Publications (<?= count($publications) ?>)</h2>
-                            <a href="?page=membres&action=publications&id=<?= $membre['id_membre'] ?>" class="btn-primary">
-                                Voir toutes les publications
-                            </a>
-                        </section>
-                    </div>
+                    <?php if (!empty($equipes)): ?>
+                        <?php
+                        Section::render([
+                            'title' => 'Équipes',
+                            'icon' => 'fas fa-users'
+                        ], function () use ($equipes) {
+                            echo '<div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">';
+                            foreach ($equipes as $eq) {
+                                Tag::render([
+                                    'text' => $eq['nom'],
+                                    'href' => '?page=membres&action=equipe&id=' . $eq['id'],
+                                    'variant' => 'primary',
+                                    'size' => 'medium'
+                                ]);
+                            }
+                            echo '</div>';
+                        });
+                        ?>
+                    <?php endif; ?>
+
+                    <?php
+                    Section::render([
+                        'title' => 'Publications (' . count($publications) . ')',
+                        'icon' => 'fas fa-file-alt'
+                    ], function () use ($membre) {
+                        Button::render([
+                            'text' => 'Voir toutes les publications',
+                            'icon' => 'fas fa-arrow-right',
+                            'variant' => 'primary',
+                            'href' => '?page=membres&action=publications&id=' . $membre['id_membre']
+                        ]);
+                    });
+                    ?>
                 </div>
             </div>
         </main>
@@ -337,7 +650,7 @@ class MembreView extends BaseView
     }
 
     /**
-     * Page publications d'un membre
+     * Member publications page
      */
     public function renderPublications($membre, $publications)
     {
@@ -347,25 +660,206 @@ class MembreView extends BaseView
 
         <main class="content-wrapper">
             <div class="container">
-                <div class="breadcrumb">
-                    <a href="?page=accueil">Accueil</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="?page=membres">Membres</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="?page=membres&action=biographie&id=<?= $membre['id_membre'] ?>">
-                        <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
-                    </a>
-                    <i class="fas fa-chevron-right"></i>
-                    <span>Publications</span>
-                </div>
+                <!-- Breadcrumb -->
+                <?php
+                Breadcrumb::render([
+                    ['text' => 'Accueil', 'url' => '?page=accueil'],
+                    ['text' => 'Membres', 'url' => '?page=membres'],
+                    ['text' => $membre['nom'] . ' ' . $membre['prenom'], 'url' => '?page=membres&action=biographie&id=' . $membre['id_membre']],
+                    ['text' => 'Publications']
+                ]);
+                ?>
 
+                <!-- Page Header -->
                 <div class="page-header">
-                    <h1><i class="fas fa-file-alt"></i> Publications de
-                        <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?></h1>
-                    <p class="subtitle"><?= count($publications) ?> publication(s)</p>
+                    <h1>
+                        <i class="fas fa-file-alt"></i>
+                        Publications de
+                        <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
+                    </h1>
+                    <p class="subtitle">
+                        <?= count($publications) ?> publication(s)
+                    </p>
                 </div>
 
-                <div class="publications-list">
+                <!-- Publications List -->
+                <div>
+                    <?php
+                    require_once __DIR__ . '/PublicationView.php';
+                    $pubView = new PublicationView();
+                    $pubView->renderPublicationsList($publications);
+                    ?>
+                </div>
+            </div>
+        </main>
+
+        <?php
+        $this->renderFooter();
+    }
+
+    /**
+     * Page "Tous les membres" avec filtres
+     */
+    public function renderTousLesMembres($membres, $grades, $postes, $equipes, $filters)
+    {
+        $this->pageTitle = 'Tous les membres';
+        $this->renderHeader();
+        ?>
+
+        <main class="content-wrapper">
+            <div class="container">
+                <!-- Breadcrumb -->
+                <?php
+                Breadcrumb::render([
+                    ['text' => 'Accueil', 'url' => '?page=accueil'],
+                    ['text' => 'Membres', 'url' => '?page=membres'],
+                    ['text' => 'Tous les membres']
+                ]);
+                ?>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1><i class="fas fa-users"></i> Tous les membres du laboratoire</h1>
+                    <p class="subtitle">
+                        <?= count($membres) ?> membre(s)
+                    </p>
+                </div>
+
+                <!-- Filters -->
+                <?php
+                FilterBar::render([], function () use ($grades, $postes, $equipes) {
+                    // Grade Filter
+                    $gradeOptions = [];
+                    foreach ($grades as $g) {
+                        $gradeOptions[] = ['value' => $g['grade'], 'text' => $g['grade']];
+                    }
+                    Filter::render([
+                        'id' => 'filter-grade',
+                        'label' => 'Grade',
+                        'icon' => 'fas fa-graduation-cap',
+                        'options' => $gradeOptions,
+                        'placeholder' => 'Tous les grades'
+                    ]);
+
+                    // Poste Filter
+                    $posteOptions = [];
+                    foreach ($postes as $p) {
+                        $posteOptions[] = ['value' => $p['poste'], 'text' => $p['poste']];
+                    }
+                    Filter::render([
+                        'id' => 'filter-poste',
+                        'label' => 'Poste',
+                        'icon' => 'fas fa-briefcase',
+                        'options' => $posteOptions,
+                        'placeholder' => 'Tous les postes'
+                    ]);
+
+                    // Équipe Filter
+                    $equipeOptions = [];
+                    foreach ($equipes as $e) {
+                        $equipeOptions[] = ['value' => $e['id'], 'text' => $e['nom']];
+                    }
+                    Filter::render([
+                        'id' => 'filter-equipe',
+                        'label' => 'Équipe',
+                        'icon' => 'fas fa-users',
+                        'options' => $equipeOptions,
+                        'placeholder' => 'Toutes les équipes'
+                    ]);
+                });
+                ?>
+
+                <!-- Members Grid -->
+                <?php
+                Grid::render(['minWidth' => '280px', 'gap' => '1.5rem'], function () use ($membres) {
+                    foreach ($membres as $membre) {
+                        $this->renderMembreCard($membre);
+                    }
+                });
+                ?>
+            </div>
+        </main>
+
+        <script>
+            // Filter handling
+            const filters = {
+                grade: document.getElementById('filter-grade'),
+                poste: document.getElementById('filter-poste'),
+                equipe: document.getElementById('filter-equipe'),
+                reset: document.getElementById('reset-filters')
+            };
+
+            function applyFilters() {
+                const params = new URLSearchParams(window.location.search);
+                params.set('page', 'membres');
+                params.set('action', 'tous');
+
+                if (filters.grade.value) params.set('grade', filters.grade.value);
+                else params.delete('grade');
+
+                if (filters.poste.value) params.set('poste', filters.poste.value);
+                else params.delete('poste');
+
+                if (filters.equipe.value) params.set('equipe', filters.equipe.value);
+                else params.delete('equipe');
+
+                window.location.href = '?' + params.toString();
+            }
+
+            filters.grade.addEventListener('change', applyFilters);
+            filters.poste.addEventListener('change', applyFilters);
+            filters.equipe.addEventListener('change', applyFilters);
+
+            filters.reset?.addEventListener('click', () => {
+                window.location.href = '?page=membres&action=tous';
+            });
+
+            // Set current filter values
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('grade')) filters.grade.value = urlParams.get('grade');
+            if (urlParams.has('poste')) filters.poste.value = urlParams.get('poste');
+            if (urlParams.has('equipe')) filters.equipe.value = urlParams.get('equipe');
+        </script>
+
+        <?php
+        $this->renderFooter();
+    }
+
+    /**
+     * Publications d'une équipe complète
+     */
+    public function renderPublicationsEquipe($equipe, $publications)
+    {
+        $this->pageTitle = 'Publications de ' . $equipe['nom'];
+        $this->renderHeader();
+        ?>
+
+        <main class="content-wrapper">
+            <div class="container">
+                <!-- Breadcrumb -->
+                <?php
+                Breadcrumb::render([
+                    ['text' => 'Accueil', 'url' => '?page=accueil'],
+                    ['text' => 'Membres', 'url' => '?page=membres'],
+                    ['text' => $equipe['nom'], 'url' => '?page=membres&action=equipe&id=' . $equipe['id']],
+                    ['text' => 'Publications']
+                ]);
+                ?>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>
+                        <i class="fas fa-file-alt"></i>
+                        Publications de l'équipe
+                        <?= htmlspecialchars($equipe['nom']) ?>
+                    </h1>
+                    <p class="subtitle">
+                        <?= count($publications) ?> publication(s)
+                    </p>
+                </div>
+
+                <!-- Publications List -->
+                <div>
                     <?php
                     require_once __DIR__ . '/PublicationView.php';
                     $pubView = new PublicationView();

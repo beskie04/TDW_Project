@@ -63,7 +63,6 @@ if (document.getElementById('filter-thematique')) {
             responsable: responsable
         });
 
-
         fetch('?' + params.toString())
             .then(response => response.json())
             .then(data => {
@@ -94,7 +93,10 @@ if (document.getElementById('filter-thematique')) {
     });
 }
 
-// Filtrage des publications (AJAX) - COMPLETELY ISOLATED
+// Filtrage des publications (AJAX)
+// Find this section in your main.js and REPLACE it:
+
+// Filtrage des publications (AJAX)
 if (document.getElementById('filter-annee') && document.getElementById('publications-container')) {
     console.log('Publications filters: Initializing...');
 
@@ -111,8 +113,6 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
 
     // Check if all elements exist
     if (filterAnnee && filterType && filterDomaine && filterAuteur && searchInput && resetBtn) {
-        console.log('Publications filters: All elements found');
-
         console.log('Publications filters: All elements found');
 
         // Fonction de filtrage
@@ -151,10 +151,24 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
             fetch(url)
                 .then(response => {
                     console.log('Response status:', response.status);
-                    return response.json();
+                    console.log('Response headers:', response.headers.get('content-type'));
+                    return response.text(); // Get as text first to see what's being returned
                 })
-                .then(data => {
-                    console.log('Response data:', data);
+                .then(text => {
+                    console.log('Raw response:', text.substring(0, 200)); // Log first 200 chars
+
+                    // Try to parse as JSON
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON Parse Error:', e);
+                        console.error('Response was:', text);
+                        throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                    }
+
+                    console.log('Parsed data:', data);
+
                     if (data.success) {
                         publicationsContainer.innerHTML = data.html;
                         publicationsContainer.style.opacity = '1';
@@ -163,11 +177,32 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
                         }
                         console.log('Publications filters: Success! Found', data.count, 'publications');
                     } else {
+                        // Show error message to user
                         console.error('Publications filters: Server returned success=false');
+                        console.error('Error:', data.error);
+                        console.error('Trace:', data.trace);
+
+                        // Display error in the container
+                        publicationsContainer.innerHTML = data.html || `
+                            <div style="padding: 2rem; text-align: center; color: #ef4444;">
+                                <h3>Erreur de filtrage</h3>
+                                <p>${data.error || 'Erreur inconnue'}</p>
+                            </div>
+                        `;
+                        publicationsContainer.style.opacity = '1';
+                        if (loading) {
+                            loading.style.display = 'none';
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Publications filters: Error:', error);
+                    console.error('Publications filters: Fetch Error:', error);
+                    publicationsContainer.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: #ef4444;">
+                            <h3>Erreur de connexion</h3>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
                     if (loading) {
                         loading.style.display = 'none';
                     }
@@ -218,73 +253,72 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
 
         console.log('Publications filters: Setup complete');
     }
+}
+// Filtrage des équipements (AJAX)
+if (document.getElementById('filter-type') && document.querySelector('.equipements-grid')) {
+    const filterType = document.getElementById('filter-type');
+    const filterEtat = document.getElementById('filter-etat');
+    const searchInput = document.getElementById('search-input');
+    const resetBtn = document.getElementById('reset-filters');
+    const equipementsContainer = document.getElementById('equipements-container');
+    const loading = document.getElementById('loading');
 
-    // Filtrage des équipements (AJAX)
-    if (document.getElementById('filter-type') && document.querySelector('.equipements-grid')) {
-        const filterType = document.getElementById('filter-type');
-        const filterEtat = document.getElementById('filter-etat');
-        const searchInput = document.getElementById('search-input');
-        const resetBtn = document.getElementById('reset-filters');
-        const equipementsContainer = document.getElementById('equipements-container');
-        const loading = document.getElementById('loading');
+    let searchTimeout;
 
-        let searchTimeout;
+    function filterEquipements() {
+        const type = filterType.value;
+        const etat = filterEtat.value;
+        const search = searchInput.value;
 
-        function filterEquipements() {
-            const type = filterType.value;
-            const etat = filterEtat.value;
-            const search = searchInput.value;
+        loading.style.display = 'block';
+        equipementsContainer.style.opacity = '0.5';
 
-            loading.style.display = 'block';
-            equipementsContainer.style.opacity = '0.5';
+        const params = new URLSearchParams({
+            page: 'equipements',
+            action: 'filter',
+            type: type,
+            etat: etat,
+            search: search
+        });
 
-            const params = new URLSearchParams({
-                page: 'equipements',
-                action: 'filter',
-                type: type,
-                etat: etat,
-                search: search
-            });
-
-            fetch('?' + params.toString())
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        equipementsContainer.innerHTML = data.html;
-                        equipementsContainer.style.opacity = '1';
-                        loading.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    loading.style.display = 'none';
+        fetch('?' + params.toString())
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    equipementsContainer.innerHTML = data.html;
                     equipementsContainer.style.opacity = '1';
-                });
-        }
-
-        filterType.addEventListener('change', filterEquipements);
-        filterEtat.addEventListener('change', filterEtat);
-
-        searchInput.addEventListener('input', function () {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(filterEquipements, 500);
-        });
-
-        resetBtn.addEventListener('click', function () {
-            filterType.value = '';
-            filterEtat.value = '';
-            searchInput.value = '';
-            filterEquipements();
-        });
+                    loading.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                loading.style.display = 'none';
+                equipementsContainer.style.opacity = '1';
+            });
     }
 
-    // Menu mobile toggle
-    const mobileToggle = document.querySelector('.mobile-toggle');
-    const navMenu = document.querySelector('.nav-menu');
+    filterType.addEventListener('change', filterEquipements);
+    filterEtat.addEventListener('change', filterEquipements);
 
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function () {
-            navMenu.classList.toggle('active');
-        });
-    }
+    searchInput.addEventListener('input', function () {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterEquipements, 500);
+    });
+
+    resetBtn.addEventListener('click', function () {
+        filterType.value = '';
+        filterEtat.value = '';
+        searchInput.value = '';
+        filterEquipements();
+    });
+}
+
+// Menu mobile toggle
+const mobileToggle = document.querySelector('.mobile-toggle');
+const navMenu = document.querySelector('.nav-menu');
+
+if (mobileToggle) {
+    mobileToggle.addEventListener('click', function () {
+        navMenu.classList.toggle('active');
+    });
 }

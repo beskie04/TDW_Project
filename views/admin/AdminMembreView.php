@@ -1,338 +1,601 @@
 <?php
 require_once __DIR__ . '/../BaseView.php';
+require_once __DIR__ . '/../components/Table.php';
+require_once __DIR__ . '/../components/Filter.php';
+require_once __DIR__ . '/../components/FilterBar.php';
+require_once __DIR__ . '/../components/SearchInput.php';
+require_once __DIR__ . '/../components/Button.php';
+require_once __DIR__ . '/../components/Badge.php';
+require_once __DIR__ . '/../components/StatCard.php';
+require_once __DIR__ . '/../components/Modal.php';
+require_once __DIR__ . '/../components/FormInput.php';
+require_once __DIR__ . '/../components/Avatar.php';
 
 class AdminMembreView extends BaseView
 {
+    protected $pageTitle = 'Gestion des Membres - Administration';
+    protected $currentPage = 'admin';
 
-    public function __construct()
+    public function render($membres, $stats, $roles, $grades, $specialites, $filters)
     {
-        $this->pageTitle = 'Administration - Membres';
-        $this->currentPage = 'admin';
+        $this->renderHeader();
+        ?>
+
+        <div class="admin-container">
+            <?php $this->renderFlashMessage(); ?>
+
+            <!-- Page Header -->
+            <div class="admin-header">
+                <div>
+                    <h1><i class="fas fa-users"></i> Gestion des Membres</h1>
+                    <p>Gérer les utilisateurs du laboratoire</p>
+                </div>
+                <div>
+                    <?php
+                    Button::render([
+                        'text' => 'Ajouter un membre',
+                        'icon' => 'fa-plus',
+                        'variant' => 'primary',
+                        'onClick' => "openModal('modal-add-membre')"
+                    ]);
+                    ?>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <?php
+                StatCard::render([
+                    'value' => $stats['total'],
+                    'label' => 'Total Membres',
+                    'icon' => 'fas fa-users',
+                    'color' => '#3b82f6'
+                ]);
+
+                StatCard::render([
+                    'value' => $stats['actifs'],
+                    'label' => 'Actifs',
+                    'icon' => 'fas fa-check-circle',
+                    'color' => '#10b981'
+                ]);
+
+                StatCard::render([
+                    'value' => $stats['enseignants'],
+                    'label' => 'Enseignants',
+                    'icon' => 'fas fa-chalkboard-teacher',
+                    'color' => '#8b5cf6'
+                ]);
+
+                StatCard::render([
+                    'value' => $stats['doctorants'],
+                    'label' => 'Doctorants',
+                    'icon' => 'fas fa-graduation-cap',
+                    'color' => '#f59e0b'
+                ]);
+
+                StatCard::render([
+                    'value' => $stats['admins'],
+                    'label' => 'Administrateurs',
+                    'icon' => 'fas fa-user-shield',
+                    'color' => '#ef4444'
+                ]);
+                ?>
+            </div>
+
+            <!-- Filters -->
+            <?php $this->renderFilters($roles, $grades, $specialites, $filters); ?>
+
+            <!-- Members Table -->
+            <div class="admin-card">
+                <?php $this->renderMembresTable($membres); ?>
+            </div>
+
+            <!-- Add Member Modal -->
+            <?php $this->renderAddModal($roles); ?>
+
+            <!-- Edit Member Modal -->
+            <?php $this->renderEditModal($roles); ?>
+        </div>
+
+        <script src="<?= ASSETS_URL ?>js/admin-membres.js"></script>
+
+        <?php
+        $this->renderFooter();
     }
 
     /**
-     * Tableau de gestion des membres
+     * Render filters section
      */
-    public function renderListe($membres, $stats)
+    private function renderFilters($roles, $grades, $specialites, $filters)
     {
-        $this->renderHeader();
-        $this->renderFlashMessage();
         ?>
+        <div class="filters-card">
+            <?php
+            FilterBar::render(
+                [
+                    'resetId' => 'reset-filters',
+                    'resetText' => 'Réinitialiser'
+                ],
+                function () use ($roles, $grades, $specialites, $filters) {
+                    SearchInput::render([
+                        'id' => 'search-membres',
+                        'placeholder' => 'Rechercher par nom, email...',
+                        'value' => $filters['search'] ?? '',
+                        'onInput' => 'applyFilters()'
+                    ]);
 
-        <main class="admin-wrapper">
-            <div class="container">
-                <div class="admin-header">
-                    <h1><i class="fas fa-users"></i> Gestion des Membres</h1>
-                    <a href="?page=admin&section=membres&action=create" class="btn-primary">
-                        <i class="fas fa-plus"></i> Nouveau Membre
-                    </a>
-                </div>
+                    Filter::render([
+                        'id' => 'filter-role',
+                        'label' => 'Rôle',
+                        'icon' => 'fas fa-user-tag',
+                        'options' => $roles,
+                        'placeholder' => 'Tous les rôles',
+                        'onChange' => 'applyFilters()'
+                    ]);
 
-                <!-- Statistiques -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: var(--primary-color)">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3><?= $stats['total'] ?></h3>
-                            <p>Total Membres</p>
-                        </div>
-                    </div>
+                    if (!empty($grades)) {
+                        Filter::render([
+                            'id' => 'filter-grade',
+                            'label' => 'Grade',
+                            'icon' => 'fas fa-award',
+                            'options' => $grades,
+                            'placeholder' => 'Tous les grades',
+                            'onChange' => 'applyFilters()'
+                        ]);
+                    }
 
-                    <?php foreach ($stats['par_grade'] as $stat): ?>
-                        <div class="stat-card">
-                            <div class="stat-icon" style="background: var(--accent-color)">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3><?= $stat['total'] ?></h3>
-                                <p><?= htmlspecialchars($stat['grade']) ?></p>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                    if (!empty($specialites)) {
+                        Filter::render([
+                            'id' => 'filter-specialite',
+                            'label' => 'Spécialité',
+                            'icon' => 'fas fa-flask',
+                            'options' => $specialites,
+                            'placeholder' => 'Toutes les spécialités',
+                            'onChange' => 'applyFilters()'
+                        ]);
+                    }
 
-                <!-- Filtres -->
-                <div class="admin-filters">
-                    <input type="text" id="search-table" placeholder="Rechercher un membre..." class="search-input">
-                    <select id="filter-role-admin" class="filter-select">
-                        <option value="">Tous les rôles</option>
-                        <option value="admin">Administrateur</option>
-                        <option value="membre">Membre</option>
-                    </select>
-                    <select id="filter-actif-admin" class="filter-select">
-                        <option value="">Tous les statuts</option>
-                        <option value="1">Actifs</option>
-                        <option value="0">Inactifs</option>
-                    </select>
-                </div>
+                    Filter::render([
+                        'id' => 'filter-actif',
+                        'label' => 'Statut',
+                        'icon' => 'fas fa-toggle-on',
+                        'options' => [
+                            ['value' => '1', 'text' => 'Actif'],
+                            ['value' => '0', 'text' => 'Inactif']
+                        ],
+                        'placeholder' => 'Tous les statuts',
+                        'onChange' => 'applyFilters()'
+                    ]);
 
-                <!-- Tableau -->
-                <div class="table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Photo</th>
-                                <th>Nom Complet</th>
-                                <th>Email</th>
-                                <th>Poste</th>
-                                <th>Grade</th>
-                                <th>Rôle</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($membres as $membre): ?>
-                                <tr>
-                                    <td><?= $membre['id_membre'] ?></td>
-                                    <td>
-                                        <div class="table-photo">
-                                            <?php if ($membre['photo']): ?>
-                                                <img src="<?= UPLOADS_URL . 'photos/' . $membre['photo'] ?>"
-                                                    alt="<?= htmlspecialchars($membre['nom']) ?>">
-                                            <?php else: ?>
-                                                <i class="fas fa-user"></i>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <strong><?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?></strong>
-                                    </td>
-                                    <td><?= htmlspecialchars($membre['email']) ?></td>
-                                    <td><?= htmlspecialchars($membre['poste'] ?? 'N/A') ?></td>
-                                    <td>
-                                        <span class="badge badge-info">
-                                            <?= htmlspecialchars($membre['grade'] ?? 'N/A') ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-<?= $membre['role'] === 'admin' ? 'danger' : 'primary' ?>">
-                                            <?= htmlspecialchars(ucfirst($membre['role'])) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php if ($membre['actif']): ?>
-                                            <span class="badge badge-success">Actif</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-secondary">Inactif</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="?page=membres&action=biographie&id=<?= $membre['id_membre'] ?>"
-                                                class="btn-action btn-view" title="Voir" target="_blank">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="?page=admin&section=membres&action=edit&id=<?= $membre['id_membre'] ?>"
-                                                class="btn-action btn-edit" title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button
-                                                onclick="confirmDelete(<?= $membre['id_membre'] ?>, '<?= htmlspecialchars(addslashes($membre['nom'] . ' ' . $membre['prenom'])) ?>')"
-                                                class="btn-action btn-delete" title="Supprimer">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+                    Filter::render([
+                        'id' => 'filter-min-publications',
+                        'label' => 'Min. Publications',
+                        'icon' => 'fas fa-file-alt',
+                        'options' => [
+                            ['value' => '1', 'text' => '1+'],
+                            ['value' => '5', 'text' => '5+'],
+                            ['value' => '10', 'text' => '10+'],
+                            ['value' => '20', 'text' => '20+']
+                        ],
+                        'placeholder' => 'Toutes',
+                        'onChange' => 'applyFilters()'
+                    ]);
+
+                    Filter::render([
+                        'id' => 'filter-min-projets',
+                        'label' => 'Min. Projets',
+                        'icon' => 'fas fa-project-diagram',
+                        'options' => [
+                            ['value' => '1', 'text' => '1+'],
+                            ['value' => '3', 'text' => '3+'],
+                            ['value' => '5', 'text' => '5+'],
+                            ['value' => '10', 'text' => '10+']
+                        ],
+                        'placeholder' => 'Tous',
+                        'onChange' => 'applyFilters()'
+                    ]);
+                }
+            );
+            ?>
+        </div>
 
         <script>
-            function confirmDelete(id, nom) {
-                if (confirm(`Êtes-vous sûr de vouloir supprimer le membre "${nom}" ?\nCette action est irréversible.`)) {
-                    window.location.href = '?page=admin&section=membres&action=delete&id=' + id;
-                }
+            function applyFilters() {
+                const search = document.getElementById('search-membres').value;
+                const role = document.getElementById('filter-role').value;
+                const grade = document.getElementById('filter-grade')?.value || '';
+                const specialite = document.getElementById('filter-specialite')?.value || '';
+                const actif = document.getElementById('filter-actif').value;
+                const minPublications = document.getElementById('filter-min-publications').value;
+                const minProjets = document.getElementById('filter-min-projets').value;
+
+                const params = new URLSearchParams({
+                    page: 'admin',
+                    section: 'membres',
+                    search, role, grade, specialite, actif,
+                    min_publications: minPublications,
+                    min_projets: minProjets
+                });
+
+                window.location.href = '?' + params.toString();
             }
 
-            // Recherche dans le tableau
-            document.getElementById('search-table').addEventListener('input', function () {
-                const searchTerm = this.value.toLowerCase();
-                const rows = document.querySelectorAll('.admin-table tbody tr');
-
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
-            });
-
-            // Filtres
-            document.getElementById('filter-role-admin').addEventListener('change', function () {
-                const role = this.value.toLowerCase();
-                const rows = document.querySelectorAll('.admin-table tbody tr');
-
-                rows.forEach(row => {
-                    if (role === '') {
-                        row.style.display = '';
-                    } else {
-                        const roleCell = row.cells[6].textContent.toLowerCase();
-                        row.style.display = roleCell.includes(role) ? '' : 'none';
-                    }
-                });
-            });
-
-            document.getElementById('filter-actif-admin').addEventListener('change', function () {
-                const actif = this.value;
-                const rows = document.querySelectorAll('.admin-table tbody tr');
-
-                rows.forEach(row => {
-                    if (actif === '') {
-                        row.style.display = '';
-                    } else {
-                        const statut = row.cells[7].textContent.toLowerCase();
-                        const isActif = statut.includes('actif') && !statut.includes('inactif');
-                        row.style.display = (actif === '1' && isActif) || (actif === '0' && !isActif) ? '' : 'none';
-                    }
-                });
+            document.getElementById('reset-filters')?.addEventListener('click', () => {
+                window.location.href = '?page=admin&section=membres';
             });
         </script>
-
         <?php
-        $this->renderFooter();
     }
 
     /**
-     * Formulaire de création/modification
+     * Render members table
      */
-    public function renderForm($membre = null)
+    private function renderMembresTable($membres)
     {
-        $isEdit = $membre !== null;
-        $this->pageTitle = $isEdit ? 'Modifier le membre' : 'Nouveau membre';
+        $headers = ['Photo', 'Nom', 'Email', 'Rôle', 'Type', 'Grade', 'Publications', 'Projets', 'Statut', 'Actions'];
 
-        $this->renderHeader();
-        $this->renderFlashMessage();
-        ?>
+        Table::render(
+            [
+                'headers' => $headers,
+                'rows' => $membres,
+                'striped' => true,
+                'hoverable' => true,
+                'responsive' => true
+            ],
+            function ($membre, $index) {
+                $statusClass = $membre['actif'] ? 'success' : 'danger';
+                $statusText = $membre['actif'] ? 'Actif' : 'Inactif';
+                ?>
+            <tr>
+                <td>
+                    <?php
+                        Avatar::render([
+                            'src' => $membre['photo'] ? ASSETS_URL . 'uploads/photos/' . $membre['photo'] : null,
+                            'name' => $membre['prenom'] . ' ' . $membre['nom'],
+                            'size' => 'sm'
+                        ]);
+                        ?>
+                </td>
+                <td>
+                    <strong>
+                        <?= htmlspecialchars($membre['prenom'] . ' ' . $membre['nom']) ?>
+                    </strong>
+                </td>
+                <td>
+                    <?= htmlspecialchars($membre['email']) ?>
+                </td>
+                <td>
+                    <?php
+                        Badge::render([
+                            'text' => ucfirst($membre['role']),
+                            'variant' => 'secondary'
+                        ]);
+                        ?>
+                </td>
+                <td>
+                    <?php
+                        if ($membre['role_systeme'] === 'admin') {
+                            Badge::render([
+                                'text' => 'Admin',
+                                'variant' => 'danger'
+                            ]);
+                        } else {
+                            Badge::render([
+                                'text' => 'User',
+                                'variant' => 'info'
+                            ]);
+                        }
+                        ?>
+                </td>
+                <td>
+                    <?= htmlspecialchars($membre['grade']) ?>
+                </td>
+                <td><span class="badge-count">
+                        <?= $membre['nb_publications'] ?>
+                    </span></td>
+                <td><span class="badge-count">
+                        <?= $membre['nb_projets'] ?>
+                    </span></td>
+                <td>
+                    <?php
+                        Badge::render([
+                            'text' => $statusText,
+                            'variant' => $statusClass
+                        ]);
+                        ?>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon btn-primary" onclick='editMembre(<?= json_encode($membre) ?>)' title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="?page=admin&section=membres&action=toggleStatus&id=<?= $membre['id_membre'] ?>"
+                            class="btn-icon btn-warning" onclick="return confirm('Changer le statut de ce membre ?')"
+                            title="<?= $membre['actif'] ? 'Désactiver' : 'Activer' ?>">
+                            <i class="fas fa-toggle-<?= $membre['actif'] ? 'on' : 'off' ?>"></i>
+                        </a>
+                        <a href="?page=admin&section=membres&action=delete&id=<?= $membre['id_membre'] ?>"
+                            class="btn-icon btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce membre ?')"
+                            title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            <?php
+            }
+        );
 
-        <main class="admin-wrapper">
-            <div class="container">
-                <div class="breadcrumb">
-                    <a href="?page=admin">Administration</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="?page=admin&section=membres">Membres</a>
-                    <i class="fas fa-chevron-right"></i>
-                    <span><?= $isEdit ? 'Modifier' : 'Nouveau' ?></span>
-                </div>
+        if (empty($membres)) {
+            echo '<div class="empty-state"><p>Aucun membre trouvé</p></div>';
+        }
+    }
 
-                <div class="form-container">
-                    <h1><?= $isEdit ? 'Modifier le membre' : 'Nouveau membre' ?></h1>
+    /**
+     * Render Add Member Modal
+     */
+    private function renderAddModal($roles)
+    {
+        $errors = $_SESSION['errors'] ?? [];
+        $oldData = $_SESSION['old_data'] ?? [];
+        unset($_SESSION['errors'], $_SESSION['old_data']);
 
-                    <form method="POST" action="?page=admin&section=membres&action=<?= $isEdit ? 'update' : 'store' ?>"
-                        class="admin-form" enctype="multipart/form-data">
-                        <?php if ($isEdit): ?>
-                            <input type="hidden" name="id" value="<?= $membre['id_membre'] ?>">
+        $rolesSysteme = [
+            'user' => 'Utilisateur',
+            'admin' => 'Administrateur'
+        ];
+
+        Modal::render(
+            [
+                'id' => 'modal-add-membre',
+                'title' => 'Ajouter un Membre',
+                'size' => 'large'
+            ],
+            function () use ($roles, $rolesSysteme, $errors, $oldData) {
+                ?>
+            <form method="POST" action="?page=admin&section=membres&action=store" id="form-add-membre">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nom <span class="required">*</span></label>
+                        <input type="text" name="nom" class="form-control" value="<?= htmlspecialchars($oldData['nom'] ?? '') ?>"
+                            required>
+                        <?php if (isset($errors['nom'])): ?>
+                            <span class="error-text">
+                                <?= $errors['nom'] ?>
+                            </span>
                         <?php endif; ?>
+                    </div>
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="nom">Nom *</label>
-                                <input type="text" id="nom" name="nom"
-                                    value="<?= $isEdit ? htmlspecialchars($membre['nom']) : '' ?>" required
-                                    class="form-control">
-                            </div>
+                    <div class="form-group">
+                        <label>Prénom <span class="required">*</span></label>
+                        <input type="text" name="prenom" class="form-control"
+                            value="<?= htmlspecialchars($oldData['prenom'] ?? '') ?>" required>
+                        <?php if (isset($errors['prenom'])): ?>
+                            <span class="error-text">
+                                <?= $errors['prenom'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="prenom">Prénom *</label>
-                                <input type="text" id="prenom" name="prenom"
-                                    value="<?= $isEdit ? htmlspecialchars($membre['prenom']) : '' ?>" required
-                                    class="form-control">
-                            </div>
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" name="email" class="form-control"
+                            value="<?= htmlspecialchars($oldData['email'] ?? '') ?>" required>
+                        <?php if (isset($errors['email'])): ?>
+                            <span class="error-text">
+                                <?= $errors['email'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="email">Email *</label>
-                                <input type="email" id="email" name="email"
-                                    value="<?= $isEdit ? htmlspecialchars($membre['email']) : '' ?>" required
-                                    class="form-control">
-                            </div>
+                    <div class="form-group">
+                        <label>Mot de passe <span class="required">*</span></label>
+                        <input type="password" name="mot_de_passe" class="form-control" required>
+                        <?php if (isset($errors['mot_de_passe'])): ?>
+                            <span class="error-text">
+                                <?= $errors['mot_de_passe'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="poste">Poste</label>
-                                <input type="text" id="poste" name="poste"
-                                    value="<?= $isEdit ? htmlspecialchars($membre['poste'] ?? '') : '' ?>" class="form-control"
-                                    placeholder="Ex: Chercheur, Doctorant, etc.">
-                            </div>
+                    <div class="form-group">
+                        <label>Poste <span class="required">*</span></label>
+                        <input type="text" name="poste" class="form-control"
+                            value="<?= htmlspecialchars($oldData['poste'] ?? '') ?>" required>
+                        <?php if (isset($errors['poste'])): ?>
+                            <span class="error-text">
+                                <?= $errors['poste'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="grade">Grade</label>
-                                <input type="text" id="grade" name="grade"
-                                    value="<?= $isEdit ? htmlspecialchars($membre['grade'] ?? '') : '' ?>" class="form-control"
-                                    placeholder="Ex: Professeur, Maître de conférences, etc.">
-                            </div>
+                    <div class="form-group">
+                        <label>Grade <span class="required">*</span></label>
+                        <input type="text" name="grade" class="form-control"
+                            value="<?= htmlspecialchars($oldData['grade'] ?? '') ?>" required>
+                        <?php if (isset($errors['grade'])): ?>
+                            <span class="error-text">
+                                <?= $errors['grade'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="role">Rôle *</label>
-                                <select id="role" name="role" required class="form-control">
-                                    <option value="membre" <?= $isEdit && $membre['role'] === 'membre' ? 'selected' : '' ?>>Membre
-                                    </option>
-                                    <option value="admin" <?= $isEdit && $membre['role'] === 'admin' ? 'selected' : '' ?>>
-                                        Administrateur</option>
-                                </select>
-                            </div>
+                    <div class="form-group">
+                        <label>Rôle <span class="required">*</span></label>
+                        <select name="role" class="form-control" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= $role['value'] ?>" <?= ($oldData['role'] ?? '') == $role['value'] ? 'selected' : '' ?>>
+                                    <?= $role['text'] ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if (isset($errors['role'])): ?>
+                            <span class="error-text">
+                                <?= $errors['role'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="actif">Statut *</label>
-                                <select id="actif" name="actif" required class="form-control">
-                                    <option value="1" <?= $isEdit && $membre['actif'] ? 'selected' : '' ?>>Actif</option>
-                                    <option value="0" <?= $isEdit && !$membre['actif'] ? 'selected' : '' ?>>Inactif</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="mot_de_passe">Mot de passe <?= $isEdit ? '' : '*' ?></label>
-                                <input type="password" id="mot_de_passe" name="mot_de_passe" <?= $isEdit ? '' : 'required' ?>
-                                    class="form-control">
-                                <?php if ($isEdit): ?>
-                                    <small class="form-text">Laisser vide pour ne pas changer</small>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="photo">Photo de profil</label>
-                                <input type="file" id="photo" name="photo" accept="image/*" class="form-control">
-                                <?php if ($isEdit && !empty($membre['photo'])): ?>
-                                    <small class="form-text">
-                                        Photo actuelle:
-                                        <img src="<?= UPLOADS_URL . 'photos/' . $membre['photo'] ?>" alt="Photo"
-                                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%; vertical-align: middle;">
-                                    </small>
-                                <?php endif; ?>
-                                <small class="form-text">Format: JPG, PNG, max 2 MB</small>
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="biographie">Biographie</label>
-                                <textarea id="biographie" name="biographie" rows="4"
-                                    class="form-control"><?= $isEdit ? htmlspecialchars($membre['biographie'] ?? '') : '' ?></textarea>
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="domaine_recherche">Domaines de recherche</label>
-                                <textarea id="domaine_recherche" name="domaine_recherche" rows="3"
-                                    class="form-control"><?= $isEdit ? htmlspecialchars($membre['domaine_recherche'] ?? '') : '' ?></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">
-                                <i class="fas fa-save"></i> <?= $isEdit ? 'Mettre à jour' : 'Créer' ?>
-                            </button>
-                            <a href="?page=admin&section=membres" class="btn-secondary">
-                                <i class="fas fa-times"></i> Annuler
-                            </a>
-                        </div>
-                    </form>
+                    <div class="form-group">
+                        <label>Accès système <span class="required">*</span></label>
+                        <select name="role_systeme" class="form-control" required>
+                            <?php foreach ($rolesSysteme as $val => $text): ?>
+                                <option value="<?= $val ?>" <?= ($oldData['role_systeme'] ?? 'user') == $val ? 'selected' : '' ?>>
+                                    <?= $text ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
-            </div>
-        </main>
 
-        <?php
-        $this->renderFooter();
+                <div class="form-group">
+                    <label>Spécialité</label>
+                    <input type="text" name="specialite" class="form-control"
+                        value="<?= htmlspecialchars($oldData['specialite'] ?? '') ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Domaine de recherche</label>
+                    <textarea name="domaine_recherche" class="form-control"
+                        rows="2"><?= htmlspecialchars($oldData['domaine_recherche'] ?? '') ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Biographie</label>
+                    <textarea name="biographie" class="form-control"
+                        rows="3"><?= htmlspecialchars($oldData['biographie'] ?? '') ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="actif" checked>
+                        <span>Compte actif</span>
+                    </label>
+                </div>
+            </form>
+            <?php
+            },
+            function () {
+                ?>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add-membre')">Annuler</button>
+            <button type="submit" form="form-add-membre" class="btn btn-primary">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+            <?php
+            }
+        );
+    }
+
+    /**
+     * Render Edit Member Modal
+     */
+    private function renderEditModal($roles)
+    {
+        $rolesSysteme = [
+            'user' => 'Utilisateur',
+            'admin' => 'Administrateur'
+        ];
+
+        Modal::render(
+            [
+                'id' => 'modal-edit-membre',
+                'title' => 'Modifier le Membre',
+                'size' => 'large'
+            ],
+            function () use ($roles, $rolesSysteme) {
+                ?>
+            <form method="POST" action="?page=admin&section=membres&action=update" id="form-edit-membre">
+                <input type="hidden" name="id_membre" id="edit-id">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nom <span class="required">*</span></label>
+                        <input type="text" name="nom" id="edit-nom" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prénom <span class="required">*</span></label>
+                        <input type="text" name="prenom" id="edit-prenom" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" name="email" id="edit-email" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mot de passe (laisser vide pour ne pas changer)</label>
+                        <input type="password" name="mot_de_passe" id="edit-password" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Poste <span class="required">*</span></label>
+                        <input type="text" name="poste" id="edit-poste" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Grade <span class="required">*</span></label>
+                        <input type="text" name="grade" id="edit-grade" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Rôle <span class="required">*</span></label>
+                        <select name="role" id="edit-role" class="form-control" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= $role['value'] ?>">
+                                    <?= $role['text'] ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Accès système <span class="required">*</span></label>
+                        <select name="role_systeme" id="edit-role-systeme" class="form-control" required>
+                            <?php foreach ($rolesSysteme as $val => $text): ?>
+                                <option value="<?= $val ?>">
+                                    <?= $text ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Spécialité</label>
+                    <input type="text" name="specialite" id="edit-specialite" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label>Domaine de recherche</label>
+                    <textarea name="domaine_recherche" id="edit-domaine" class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Biographie</label>
+                    <textarea name="biographie" id="edit-biographie" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="actif" id="edit-actif">
+                        <span>Compte actif</span>
+                    </label>
+                </div>
+            </form>
+            <?php
+            },
+            function () {
+                ?>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-membre')">Annuler</button>
+            <button type="submit" form="form-edit-membre" class="btn btn-primary">
+                <i class="fas fa-save"></i> Mettre à jour
+            </button>
+            <?php
+            }
+        );
     }
 }
 ?>

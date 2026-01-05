@@ -21,7 +21,7 @@ class MembreController
      */
     public function index()
     {
-        // Récupérer le directeur (celui avec le poste "Directeur du Laboratoire")
+
         $directeur = $this->membreModel->where([
             'poste' => ['LIKE', '%Directeur%'],
             'actif' => 1
@@ -110,6 +110,56 @@ class MembreController
         $publications = $this->membreModel->getPublications($id);
 
         $this->view->renderPublications($membre, $publications);
+    }
+
+    /**
+     * Page "Tous les membres" avec filtres
+     */
+    public function tousLesMembres()
+    {
+        // Récupérer les filtres
+        $filters = [
+            'grade' => $_GET['grade'] ?? '',
+            'poste' => $_GET['poste'] ?? '',
+            'equipe' => $_GET['equipe'] ?? '',
+            'search' => $_GET['search'] ?? '',
+            'sort' => $_GET['sort'] ?? 'nom',
+            'order' => $_GET['order'] ?? 'ASC'
+        ];
+
+        // Récupérer les membres filtrés
+        $membres = $this->membreModel->getAllWithFilters($filters);
+
+        // Récupérer les données pour les filtres
+        $grades = $this->membreModel->getGrades();
+        $postes = $this->membreModel->getPostes();
+        $equipes = $this->equipeModel->getAll();
+
+        $this->view->renderTousLesMembres($membres, $grades, $postes, $equipes, $filters);
+    }
+
+    /**
+     * Publications d'une équipe complète
+     */
+    public function publicationsEquipe()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if (!$id) {
+            header('Location: ?page=membres');
+            exit;
+        }
+
+        $equipe = $this->equipeModel->getById($id);
+
+        if (!$equipe) {
+            header('Location: ?page=membres');
+            exit;
+        }
+
+        $publications = $this->equipeModel->getPublications($id);
+
+        $this->view->renderPublicationsEquipe($equipe, $publications);
     }
 }
 ?>

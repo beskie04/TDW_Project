@@ -3,11 +3,10 @@ require_once __DIR__ . '/BaseModel.php';
 
 class AccueilModel extends BaseModel
 {
-
     /**
-     * Récupérer les actualités actives pour le diaporama
+     * Récupérer les actualités pour le slider (5 max)
      */
-    public function getActualites()
+    public function getActualitesSlider()
     {
         $sql = "SELECT * FROM actualites 
                 WHERE actif = 1 
@@ -18,86 +17,81 @@ class AccueilModel extends BaseModel
     }
 
     /**
-     * Récupérer les publications récentes
+     * SECTION 1: Récupérer les actualités scientifiques (6)
      */
-    public function getPublicationsRecentes($limit = 5)
+    public function getActualitesScientifiques()
     {
-        $sql = "SELECT * FROM publications 
-                ORDER BY annee DESC, created_at DESC 
-                LIMIT :limit";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Récupérer les projets en cours
-     */
-    public function getProjetsEnCours($limit = 4)
-    {
-        $sql = "SELECT p.*, t.nom_thematique as thematique_nom
-                FROM projets p
-                LEFT JOIN thematiques t ON p.id_thematique = t.id_thematique
-                LEFT JOIN statuts_projet s ON p.id_statut = s.id_statut
-                WHERE s.nom_statut LIKE '%cours%'
-                ORDER BY p.date_debut DESC
-                LIMIT :limit";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Récupérer toutes les équipes avec nombre de membres
-     */
-    public function getEquipesAvecMembres()
-    {
-        $sql = "SELECT e.*, 
-                       COUNT(em.id_membre) as nb_membres
-                FROM equipes e
-                LEFT JOIN equipe_membres em ON e.id = em.id_equipe
-                GROUP BY e.id
-                ORDER BY e.nom";
+        $sql = "SELECT * FROM actualites 
+                WHERE actif = 1 
+                ORDER BY date_publication DESC 
+                LIMIT 6";
 
         return $this->query($sql);
     }
 
     /**
-     * Récupérer les statistiques pour la page d'accueil
+     * SECTION 2: Récupérer l'organigramme (Directeur + postes clés)
      */
-    public function getStatistiques()
+    public function getOrganigramme()
     {
-        $stats = [];
+        $sql = "SELECT * FROM membres 
+                WHERE poste IN ('Directeur du Laboratoire', 'Chef d\'Équipe', 'Adjoint Administratif')
+                AND actif = 1
+                ORDER BY 
+                    CASE poste
+                        WHEN 'Directeur du Laboratoire' THEN 1
+                        WHEN 'Chef d\'Équipe' THEN 2
+                        WHEN 'Adjoint Administratif' THEN 3
+                        ELSE 4
+                    END,
+                    nom ASC";
 
-        // Total projets en cours
-        $sql = "SELECT COUNT(*) as total FROM projets p
-                INNER JOIN statuts_projet s ON p.id_statut = s.id_statut
-                WHERE s.nom_statut LIKE '%cours%'";
+        return $this->query($sql);
+    }
+
+    /**
+     * SECTION 3: Récupérer les événements à venir avec pagination
+     */
+    public function getEvenementsAvenir($page = 1, $perPage = 6)
+    {
+        $offset = ($page - 1) * $perPage;
+
+        $sql = "SELECT * FROM evenements 
+                WHERE date_debut >= CURDATE() 
+                AND est_publie = 'à venir'
+                ORDER BY date_debut ASC 
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Compter le total d'événements à venir
+     */
+    public function countEvenementsAvenir()
+    {
+        $sql = "SELECT COUNT(*) as total FROM evenements 
+                WHERE date_debut >= CURDATE() 
+                AND est_publie = 'à venir'";
+
         $result = $this->query($sql);
-        $stats['projets_en_cours'] = $result[0]['total'];
+        return $result[0]['total'] ?? 0;
+    }
 
-        // Total publications
-        $sql = "SELECT COUNT(*) as total FROM publications";
-        $result = $this->query($sql);
-        $stats['publications'] = $result[0]['total'];
+    /**
+     * SECTION 4: Récupérer les partenaires (universités, entreprises, organismes)
+     */
+    public function getPartenaires()
+    {
+        $sql = "SELECT * FROM partenaires 
+                ORDER BY type_partenaire, nom";
 
-        // Total membres actifs
-        $sql = "SELECT COUNT(*) as total FROM membres WHERE actif = 1";
-        $result = $this->query($sql);
-        $stats['membres'] = $result[0]['total'];
-
-        // Total équipes
-        $sql = "SELECT COUNT(*) as total FROM equipes";
-        $result = $this->query($sql);
-        $stats['equipes'] = $result[0]['total'];
-
-        return $stats;
+        return $this->query($sql);
     }
 }
 ?>

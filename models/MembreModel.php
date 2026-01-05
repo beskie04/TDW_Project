@@ -145,5 +145,61 @@ class MembreModel extends BaseModel
 
         return $stats;
     }
+
+
+    /**
+     * Récupérer tous les membres sauf le directeur
+     */
+    public function getAllExceptDirecteur()
+    {
+        $sql = "SELECT * FROM {$this->table} 
+            WHERE actif = 1 AND poste NOT LIKE '%Directeur%' 
+            ORDER BY nom, prenom";
+        return $this->query($sql);
+    }
+
+    /**
+     * Récupérer tous les membres avec pagination et filtres
+     */
+    public function getAllWithFilters($filters = [], $page = 1, $perPage = 12)
+    {
+        $conditions = ['actif = 1'];
+        $params = [];
+
+        $sql = "SELECT DISTINCT m.* FROM {$this->table} m
+            LEFT JOIN equipe_membres em ON m.id_membre = em.id_membre";
+
+        if (!empty($filters['grade'])) {
+            $conditions[] = "m.grade = :grade";
+            $params['grade'] = $filters['grade'];
+        }
+
+        if (!empty($filters['poste'])) {
+            $conditions[] = "m.poste LIKE :poste";
+            $params['poste'] = '%' . $filters['poste'] . '%';
+        }
+
+        if (!empty($filters['equipe'])) {
+            $conditions[] = "em.id_equipe = :equipe";
+            $params['equipe'] = $filters['equipe'];
+        }
+
+        if (!empty($filters['search'])) {
+            $conditions[] = "(m.nom LIKE :search OR m.prenom LIKE :search OR m.email LIKE :search)";
+            $params['search'] = '%' . $filters['search'] . '%';
+        }
+
+        $sql .= " WHERE " . implode(' AND ', $conditions);
+
+        // Tri
+        $orderBy = $filters['sort'] ?? 'nom';
+        $order = $filters['order'] ?? 'ASC';
+        $allowedSort = ['nom', 'prenom', 'grade', 'poste'];
+        if (in_array($orderBy, $allowedSort)) {
+            $sql .= " ORDER BY m.{$orderBy} {$order}";
+        }
+
+        return $this->query($sql, $params);
+    }
 }
 ?>

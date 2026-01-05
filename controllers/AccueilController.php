@@ -18,13 +18,33 @@ class AccueilController
      */
     public function index()
     {
-        // Récupérer les données via le modèle
-        $actualites = $this->model->getActualites();
-        $publications = $this->model->getPublicationsRecentes();
-        $projets = $this->model->getProjetsEnCours();
-        $equipes = $this->model->getEquipesAvecMembres();
+        // Slider
+        $actualitesSlider = $this->model->getActualitesSlider();
 
-        $this->view->render($actualites, $publications, $projets, $equipes);
+        // Section 1: Actualités scientifiques
+        $actualites = $this->model->getActualitesScientifiques();
+
+        // Section 2: Organigramme
+        $organigramme = $this->model->getOrganigramme();
+
+        // Section 3: Événements à venir avec pagination
+        $page = isset($_GET['page_events']) ? (int) $_GET['page_events'] : 1;
+        $evenements = $this->model->getEvenementsAvenir($page, 6);
+        $totalEvenements = $this->model->countEvenementsAvenir();
+        $totalPages = ceil($totalEvenements / 6);
+
+        // Section 4: Partenaires
+        $partenaires = $this->model->getPartenaires();
+
+        $this->view->render(
+            $actualitesSlider,
+            $actualites,
+            $organigramme,
+            $evenements,
+            $page,
+            $totalPages,
+            $partenaires
+        );
     }
 }
 ?>

@@ -216,5 +216,16 @@ class ProjetModel extends BaseModel
 
         return $stats;
     }
+
+    public function getPartenaires($projetId)
+    {
+        $sql = "SELECT p.*, pp.role_partenaire, pp.date_debut, pp.date_fin
+            FROM partenaires p
+            INNER JOIN projet_partenaires pp ON p.id_partenaire = pp.id_partenaire
+            WHERE pp.id_projet = :projet_id
+            ORDER BY p.nom";
+
+        return $this->query($sql, ['projet_id' => $projetId]);
+    }
 }
 ?>

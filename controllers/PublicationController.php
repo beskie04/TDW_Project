@@ -1,4 +1,7 @@
 <?php
+// ============================================================================
+// PublicationController.php - FINAL BULLETPROOF VERSION
+// ============================================================================
 require_once __DIR__ . '/../models/PublicationModel.php';
 require_once __DIR__ . '/../views/PublicationView.php';
 
@@ -13,49 +16,90 @@ class PublicationController
         $this->view = new PublicationView();
     }
 
-    /**
-     * Afficher la liste des publications (seulement les validées)
-     */
     public function index()
     {
         $publications = $this->model->getAllValidated();
-
-        // Récupérer les données pour les filtres
         $years = $this->model->getYears();
-        $types = TYPES_PUBLICATIONS; // Depuis constants.php
+        $types = TYPES_PUBLICATIONS;
         $domaines = $this->model->getDomaines();
         $auteurs = $this->model->getAuteurs();
 
-        // IMPORTANT: Passer les 5 paramètres dans le bon ordre
         $this->view->renderListe($publications, $years, $types, $domaines, $auteurs);
     }
 
-    /**
-     * Filtrer les publications (AJAX)
-     */
     public function filter()
     {
-        header('Content-Type: application/json');
+        // Clear any output buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
 
-        $filters = [
-            'annee' => $_GET['annee'] ?? '',
-            'type' => $_GET['type'] ?? '',
-            'domaine' => $_GET['domaine'] ?? '',
-            'auteur' => $_GET['auteur'] ?? '',
-            'search' => $_GET['search'] ?? ''
-        ];
-
-        $publications = $this->model->filter($filters);
-
+        // Start fresh
         ob_start();
-        $this->view->renderPublicationsList($publications);
-        $html = ob_get_clean();
 
-        echo json_encode([
-            'success' => true,
-            'html' => $html,
-            'count' => count($publications)
-        ]);
+        // Set JSON header
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            // Build clean filters - ONLY include non-empty values
+            $filters = [];
+
+            if (isset($_GET['annee']) && $_GET['annee'] !== '' && $_GET['annee'] !== null) {
+                $filters['annee'] = trim($_GET['annee']);
+            }
+
+            if (isset($_GET['type']) && $_GET['type'] !== '' && $_GET['type'] !== null) {
+                $filters['type'] = trim($_GET['type']);
+            }
+
+            if (isset($_GET['domaine']) && $_GET['domaine'] !== '' && $_GET['domaine'] !== null) {
+                $filters['domaine'] = trim($_GET['domaine']);
+            }
+
+            if (isset($_GET['auteur']) && $_GET['auteur'] !== '' && $_GET['auteur'] !== null) {
+                $filters['auteur'] = trim($_GET['auteur']);
+            }
+
+            if (isset($_GET['search']) && $_GET['search'] !== '' && $_GET['search'] !== null) {
+                $filters['search'] = trim($_GET['search']);
+            }
+
+            // Get filtered publications
+            $publications = $this->model->filter($filters);
+
+            // Capture HTML
+            ob_start();
+            $this->view->renderPublicationsList($publications);
+            $html = ob_get_clean();
+
+            // Clear outer buffer
+            ob_end_clean();
+
+            // Output JSON
+            echo json_encode([
+                'success' => true,
+                'html' => $html,
+                'count' => count($publications),
+                'filters_applied' => $filters
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        } catch (Exception $e) {
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'count' => 0,
+                'html' => '<div style="padding: 2rem; text-align: center; color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>Erreur lors du filtrage</h3>
+                    <p>' . htmlspecialchars($e->getMessage()) . '</p>
+                    </div>'
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
+        exit;
     }
 }
-?>

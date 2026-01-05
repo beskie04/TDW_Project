@@ -49,12 +49,13 @@ class ProjetController
 
         $membres = $this->model->getMembres($id);
         $publications = $this->model->getPublications($id);
+        $partenaires = $this->model->getPartenaires($id); // NEW: Get partners
 
-        $this->view->renderDetails($projet, $membres, $publications);
+        $this->view->renderDetails($projet, $membres, $publications, $partenaires);
     }
 
     /**
-     * Filtrer les projets (AJAX)
+     * Filtrer les projets 
      */
     public function filter()
     {

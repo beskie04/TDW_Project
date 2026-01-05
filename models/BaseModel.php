@@ -44,7 +44,8 @@ class BaseModel
     {
         $fields = array_keys($data);
         $placeholders = array_map(function ($field) {
-            return ':' . $field; }, $fields);
+            return ':' . $field;
+        }, $fields);
 
         $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $placeholders) . ")";

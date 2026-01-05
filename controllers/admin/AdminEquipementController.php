@@ -10,16 +10,11 @@ class AdminEquipementController
 
     public function __construct()
     {
-        // Vérifier si admin
         $this->checkAdmin();
-
         $this->model = new EquipementModel();
         $this->view = new AdminEquipementView();
     }
 
-    /**
-     * Vérifier si l'utilisateur est admin
-     */
     private function checkAdmin()
     {
         if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
@@ -36,23 +31,108 @@ class AdminEquipementController
         $equipements = $this->model->getAllWithReservations();
         $stats = $this->model->getStatistics();
 
-        // Récupérer toutes les réservations récentes
-        $reservations = $this->getAllReservations();
-
-        $this->view->renderListe($equipements, $stats, $reservations);
+        $this->view->renderListe($equipements, $stats);
     }
 
     /**
-     * Formulaire de création
+     * Historique des réservations
      */
+    public function historique()
+    {
+        $reservations = $this->model->getAllReservations();
+        $this->view->renderHistorique($reservations);
+    }
+
+    /**
+     * Gestion des demandes prioritaires
+     */
+    public function demandes()
+    {
+        $filters = [
+            'statut' => $_GET['statut'] ?? ''
+        ];
+
+        $demandes = $this->model->getAllDemandesPrioritaires($filters);
+        $this->view->renderDemandes($demandes);
+    }
+
+    /**
+     * Approuver une demande
+     */
+    public function approuverDemande()
+    {
+        $id = $_POST['id'] ?? null;
+        $reponse = $_POST['reponse'] ?? '';
+
+        if (!$id) {
+            BaseView::setFlash('ID manquant', 'error');
+            header('Location: ?page=admin&section=equipements&action=demandes');
+            exit;
+        }
+
+        $success = $this->model->approuverDemande($id, $reponse);
+
+        if ($success) {
+            BaseView::setFlash('Demande approuvée avec succès', 'success');
+        } else {
+            BaseView::setFlash('Erreur lors de l\'approbation', 'error');
+        }
+
+        header('Location: ?page=admin&section=equipements&action=demandes');
+        exit;
+    }
+
+    /**
+     * Rejeter une demande
+     */
+    public function rejeterDemande()
+    {
+        $id = $_POST['id'] ?? null;
+        $reponse = $_POST['reponse'] ?? '';
+
+        if (!$id) {
+            BaseView::setFlash('ID manquant', 'error');
+            header('Location: ?page=admin&section=equipements&action=demandes');
+            exit;
+        }
+
+        $success = $this->model->rejeterDemande($id, $reponse);
+
+        if ($success) {
+            BaseView::setFlash('Demande rejetée', 'success');
+        } else {
+            BaseView::setFlash('Erreur lors du rejet', 'error');
+        }
+
+        header('Location: ?page=admin&section=equipements&action=demandes');
+        exit;
+    }
+
+    /**
+     * Générer rapport PDF
+     */
+    public function genererRapport()
+    {
+        require_once __DIR__ . '/../../utils/PdfGeneratorEquipement.php';
+
+        $filters = [
+            'type' => $_GET['type'] ?? '',
+            'etat' => $_GET['etat'] ?? ''
+        ];
+
+        $equipements = $this->model->filter($filters);
+        $stats = $this->model->getStatistics();
+
+        $pdfGen = new PdfGeneratorEquipement();
+        $pdfGen->generateEquipementsReport($equipements, $stats, $filters);
+        exit;
+    }
+
     public function create()
     {
         $this->view->renderForm(null);
     }
 
-    /**
-     * Enregistrer un nouvel équipement
-     */
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -60,7 +140,6 @@ class AdminEquipementController
             exit;
         }
 
-        // Validation
         $errors = $this->validate($_POST);
 
         if (!empty($errors)) {
@@ -69,7 +148,6 @@ class AdminEquipementController
             exit;
         }
 
-        // Préparer les données
         $data = [
             'nom' => $_POST['nom'],
             'type' => $_POST['type'],
@@ -78,22 +156,18 @@ class AdminEquipementController
             'specifications' => !empty($_POST['specifications']) ? $_POST['specifications'] : null
         ];
 
-        // Insérer
         $id = $this->model->insert($data);
 
         if ($id) {
             BaseView::setFlash('Équipement créé avec succès !', 'success');
             header('Location: ?page=admin&section=equipements');
         } else {
-            BaseView::setFlash('Erreur lors de la création de l\'équipement', 'error');
+            BaseView::setFlash('Erreur lors de la création', 'error');
             header('Location: ?page=admin&section=equipements&action=create');
         }
         exit;
     }
 
-    /**
-     * Formulaire de modification
-     */
     public function edit()
     {
         $id = $_GET['id'] ?? null;
@@ -114,9 +188,6 @@ class AdminEquipementController
         $this->view->renderForm($equipement);
     }
 
-    /**
-     * Mettre à jour un équipement
-     */
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -131,7 +202,6 @@ class AdminEquipementController
             exit;
         }
 
-        // Validation
         $errors = $this->validate($_POST);
 
         if (!empty($errors)) {
@@ -140,7 +210,6 @@ class AdminEquipementController
             exit;
         }
 
-        // Préparer les données
         $data = [
             'nom' => $_POST['nom'],
             'type' => $_POST['type'],
@@ -149,22 +218,18 @@ class AdminEquipementController
             'specifications' => !empty($_POST['specifications']) ? $_POST['specifications'] : null
         ];
 
-        // Mettre à jour
         $success = $this->model->update($id, $data);
 
         if ($success) {
             BaseView::setFlash('Équipement mis à jour avec succès !', 'success');
         } else {
-            BaseView::setFlash('Erreur lors de la mise à jour de l\'équipement', 'error');
+            BaseView::setFlash('Erreur lors de la mise à jour', 'error');
         }
 
         header('Location: ?page=admin&section=equipements');
         exit;
     }
 
-    /**
-     * Supprimer un équipement
-     */
     public function delete()
     {
         $id = $_GET['id'] ?? null;
@@ -174,7 +239,6 @@ class AdminEquipementController
             exit;
         }
 
-        // Vérifier s'il y a des réservations actives
         $reservations = $this->model->getReservations($id);
         if (!empty($reservations)) {
             BaseView::setFlash('Impossible de supprimer : cet équipement a des réservations actives', 'error');
@@ -187,7 +251,7 @@ class AdminEquipementController
         if ($success) {
             BaseView::setFlash('Équipement supprimé avec succès !', 'success');
         } else {
-            BaseView::setFlash('Erreur lors de la suppression de l\'équipement', 'error');
+            BaseView::setFlash('Erreur lors de la suppression', 'error');
         }
 
         header('Location: ?page=admin&section=equipements');
@@ -195,8 +259,31 @@ class AdminEquipementController
     }
 
     /**
-     * Annuler une réservation
+     * Voir détails (admin view only)
      */
+    public function details()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if (!$id) {
+            header('Location: ?page=admin&section=equipements');
+            exit;
+        }
+
+        $equipement = $this->model->getById($id);
+
+        if (!$equipement) {
+            BaseView::setFlash('Équipement introuvable', 'error');
+            header('Location: ?page=admin&section=equipements');
+            exit;
+        }
+
+        $reservations = $this->model->getReservations($id, true); // Include history
+        $stats = $this->model->getStatistiquesEquipement($id);
+
+        $this->view->renderDetails($equipement, $reservations, $stats);
+    }
+
     public function annuler_reservation()
     {
         $id = $_GET['id'] ?? null;
@@ -211,16 +298,13 @@ class AdminEquipementController
         if ($success) {
             BaseView::setFlash('Réservation annulée avec succès', 'success');
         } else {
-            BaseView::setFlash('Erreur lors de l\'annulation de la réservation', 'error');
+            BaseView::setFlash('Erreur lors de l\'annulation', 'error');
         }
 
-        header('Location: ?page=admin&section=equipements');
+        header('Location: ?page=admin&section=equipements&action=historique');
         exit;
     }
 
-    /**
-     * Validation des données
-     */
     private function validate($data)
     {
         $errors = [];
@@ -242,24 +326,6 @@ class AdminEquipementController
         }
 
         return $errors;
-    }
-
-    /**
-     * Récupérer toutes les réservations récentes
-     */
-    private function getAllReservations()
-    {
-        $sql = "SELECT r.*, 
-                       e.nom as equipement_nom,
-                       m.nom as membre_nom,
-                       m.prenom as membre_prenom
-                FROM reservations r
-                INNER JOIN equipements e ON r.id_equipement = e.id
-                INNER JOIN membres m ON r.id_membre = m.id_membre
-                ORDER BY r.created_at DESC
-                LIMIT 20";
-
-        return $this->model->query($sql);
     }
 }
 ?>
