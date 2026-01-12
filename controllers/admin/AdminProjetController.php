@@ -16,13 +16,12 @@ class AdminProjetController
 
     public function __construct()
     {
-        $this->checkAccess(); // ⭐ CHANGÉ: Plus de checkAdmin()
+        $this->checkAccess();
         $this->model = new ProjetModel();
         $this->partenaireModel = new PartenaireModel();
         $this->view = new AdminProjetView();
     }
 
-    // ⭐ CHANGÉ: Remplace checkAdmin() par checkAccess()
     private function checkAccess()
     {
         if (!isset($_SESSION['user'])) {
@@ -33,7 +32,7 @@ class AdminProjetController
 
     public function index()
     {
-        // ⭐ AJOUT: Check permission
+        // Check permission
         if (!hasPermission('view_projets')) {
             BaseView::setFlash('Accès refusé. Permission requise: voir les projets', 'error');
             header('Location: ?page=admin');
@@ -45,12 +44,8 @@ class AdminProjetController
         $this->view->renderListe($projets, $stats);
     }
 
-    /**
-     * Display statistics page
-     */
     public function stats()
     {
-        // ⭐ AJOUT: Check permission
         if (!hasPermission('view_projet_stats')) {
             BaseView::setFlash('Accès refusé. Permission requise: voir les statistiques', 'error');
             header('Location: ?page=admin&section=projets');
@@ -65,12 +60,8 @@ class AdminProjetController
         $this->view->renderStatistics($stats, $thematiques, $responsables, $annees);
     }
 
-    /**
-     * Generate PDF report
-     */
     public function generate_pdf()
     {
-        // ⭐ AJOUT: Check permission
         if (!hasPermission('generate_projet_pdf')) {
             BaseView::setFlash('Accès refusé. Permission requise: générer des PDF', 'error');
             header('Location: ?page=admin&section=projets&action=stats');
@@ -82,7 +73,6 @@ class AdminProjetController
         $projets = [];
         $title = 'Rapport des Projets';
 
-        // Build filters based on type
         switch ($type) {
             case 'thematique':
                 $thematiqueId = $_GET['thematique_id'] ?? '';
@@ -119,10 +109,8 @@ class AdminProjetController
                 break;
         }
 
-        // Get filtered projects
         $projets = $this->getFilteredProjects($filters);
 
-        // Generate PDF
         try {
             $pdfGenerator = new PdfGenerator();
             $pdfGenerator->generateProjectsReport($projets, $title, $filters);
@@ -135,8 +123,7 @@ class AdminProjetController
 
     public function create()
     {
-        // ⭐ AJOUT: Check permission
-        if (!hasPermission('create_projet')) {
+        if (!hasPermission('create_projet') && !hasPermission('create_own_projet')) {
             BaseView::setFlash('Accès refusé. Permission requise: créer un projet', 'error');
             header('Location: ?page=admin&section=projets');
             exit;
@@ -153,8 +140,7 @@ class AdminProjetController
 
     public function store()
     {
-        // ⭐ AJOUT: Check permission
-        if (!hasPermission('create_projet')) {
+        if (!hasPermission('create_projet') && !hasPermission('create_own_projet')) {
             BaseView::setFlash('Accès refusé. Permission requise: créer un projet', 'error');
             header('Location: ?page=admin&section=projets');
             exit;
@@ -194,32 +180,23 @@ class AdminProjetController
             'responsable_id' => $_POST['responsable_id'],
             'date_debut' => $_POST['date_debut'],
             'date_fin' => !empty($_POST['date_fin']) ? $_POST['date_fin'] : null,
-            'budget' => !empty($_POST['budget']) ? $_POST['budget'] : null
+            
         ];
 
         $id = $this->model->insert($data);
 
         if ($id) {
-            // Associate members
-            if (!empty($_POST['membres'])) {
-                // ⭐ AJOUT: Check permission pour gérer les membres
-                if (!hasPermission('manage_projet_members')) {
-                    BaseView::setFlash('Projet créé, mais vous n\'avez pas la permission de gérer les membres', 'warning');
-                } else {
-                    $membres = $this->prepareMembresData($_POST['membres']);
-                    $this->model->syncMembres($id, $membres);
-                }
+            // ⭐ FIX: Admin bypass OU permission manage_projet_members
+            $canManageMembers = ($_SESSION['user']['role'] === 'admin') || hasPermission('manage_projet_members');
+            
+            if (!empty($_POST['membres']) && $canManageMembers) {
+                $membres = $this->prepareMembresData($_POST['membres']);
+                $this->model->syncMembres($id, $membres);
             }
 
-            // Associate partners
-            if (!empty($_POST['partenaires'])) {
-                // ⭐ AJOUT: Check permission pour gérer les partenaires
-                if (!hasPermission('manage_projet_members')) {
-                    BaseView::setFlash('Projet créé, mais vous n\'avez pas la permission de gérer les partenaires', 'warning');
-                } else {
-                    $partenaires = $this->preparePartenairesData($_POST['partenaires']);
-                    $this->partenaireModel->syncProjectPartners($id, $partenaires);
-                }
+            if (!empty($_POST['partenaires']) && $canManageMembers) {
+                $partenaires = $this->preparePartenairesData($_POST['partenaires']);
+                $this->partenaireModel->syncProjectPartners($id, $partenaires);
             }
 
             BaseView::setFlash('Projet créé avec succès !', 'success');
@@ -246,7 +223,6 @@ class AdminProjetController
             exit;
         }
 
-        // ⭐ AJOUT: Check permission (global ou own)
         $isResponsable = $_SESSION['user']['id_membre'] == $projet['responsable_id'];
 
         if (
@@ -289,7 +265,6 @@ class AdminProjetController
             exit;
         }
 
-        // ⭐ AJOUT: Check permission (global ou own)
         $isResponsable = $_SESSION['user']['id_membre'] == $projet['responsable_id'];
 
         if (
@@ -308,13 +283,11 @@ class AdminProjetController
             exit;
         }
 
-        // Handle new thematique
         $idThematique = $_POST['id_thematique'];
         if ($idThematique === '__CREATE_NEW__' && !empty($_POST['id_thematique_new'])) {
             $idThematique = $this->createThematique($_POST['id_thematique_new']);
         }
 
-        // Handle new type financement
         $idTypeFinancement = $_POST['id_type_financement'];
         if ($idTypeFinancement === '__CREATE_NEW__' && !empty($_POST['id_type_financement_new'])) {
             $idTypeFinancement = $this->createTypeFinancement($_POST['id_type_financement_new']);
@@ -330,28 +303,23 @@ class AdminProjetController
             'responsable_id' => $_POST['responsable_id'],
             'date_debut' => $_POST['date_debut'],
             'date_fin' => !empty($_POST['date_fin']) ? $_POST['date_fin'] : null,
-            'budget' => !empty($_POST['budget']) ? $_POST['budget'] : null
+            
         ];
 
         $success = $this->model->update($id, $data);
 
         if ($success) {
-            // Sync members
-            if (isset($_POST['membres'])) {
-                // ⭐ AJOUT: Check permission pour gérer les membres
-                if (hasPermission('manage_projet_members')) {
-                    $membres = $this->prepareMembresData($_POST['membres']);
-                    $this->model->syncMembres($id, $membres);
-                }
+            // ⭐ FIX: Admin bypass OU permission manage_projet_members
+            $canManageMembers = ($_SESSION['user']['role'] === 'admin') || hasPermission('manage_projet_members');
+            
+            if (isset($_POST['membres']) && $canManageMembers) {
+                $membres = $this->prepareMembresData($_POST['membres']);
+                $this->model->syncMembres($id, $membres);
             }
 
-            // Sync partners
-            if (isset($_POST['partenaires'])) {
-                // ⭐ AJOUT: Check permission pour gérer les partenaires
-                if (hasPermission('manage_projet_members')) {
-                    $partenaires = $this->preparePartenairesData($_POST['partenaires']);
-                    $this->partenaireModel->syncProjectPartners($id, $partenaires);
-                }
+            if (isset($_POST['partenaires']) && $canManageMembers) {
+                $partenaires = $this->preparePartenairesData($_POST['partenaires']);
+                $this->partenaireModel->syncProjectPartners($id, $partenaires);
             }
 
             BaseView::setFlash('Projet mis à jour avec succès !', 'success');
@@ -378,7 +346,6 @@ class AdminProjetController
             exit;
         }
 
-        // ⭐ AJOUT: Check permission (global ou own)
         $isResponsable = $_SESSION['user']['id_membre'] == $projet['responsable_id'];
 
         if (
@@ -408,7 +375,6 @@ class AdminProjetController
         if (empty($data['description']))
             $errors[] = 'La description est requise';
 
-        // Validate thematique
         if (empty($data['id_thematique'])) {
             $errors[] = 'La thématique est requise';
         } elseif ($data['id_thematique'] === '__CREATE_NEW__' && empty($data['id_thematique_new'])) {
@@ -418,7 +384,6 @@ class AdminProjetController
         if (empty($data['id_statut']))
             $errors[] = 'Le statut est requis';
 
-        // Validate type financement
         if (empty($data['id_type_financement'])) {
             $errors[] = 'Le type de financement est requis';
         } elseif ($data['id_type_financement'] === '__CREATE_NEW__' && empty($data['id_type_financement_new'])) {
@@ -466,14 +431,10 @@ class AdminProjetController
         return $partenaires;
     }
 
-    /**
-     * Get enhanced statistics
-     */
     private function getEnhancedStatistics()
     {
         $stats = $this->model->getStatistics();
 
-        // Add responsable statistics
         $sql = "SELECT 
                     CONCAT(m.nom, ' ', m.prenom) as responsable_nom,
                     COUNT(p.id_projet) as total
@@ -487,9 +448,6 @@ class AdminProjetController
         return $stats;
     }
 
-    /**
-     * Get filtered projects for PDF
-     */
     private function getFilteredProjects($filters)
     {
         $sql = "SELECT p.*, 

@@ -15,12 +15,23 @@ class AdminEvenementView extends BaseView
 
         <main class="content-wrapper">
             <div class="container">
+               
+
                 <div class="admin-header">
-                    <h1><i class="fas fa-calendar-alt"></i> Gestion des Événements</h1>
-                    <a href="?page=admin&section=evenements&action=create" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Créer un événement
-                    </a>
-                </div>
+    <h1><i class="fas fa-calendar-alt"></i> Gestion des Événements</h1>
+    <div style="display: flex; gap: 1rem;">
+        <!-- Bouton pour envoyer les rappels -->
+        <a href="?page=admin&section=notifications&action=sendReminders" 
+           class="btn btn-success"
+           onclick="return confirm('Envoyer les rappels d\'événements maintenant ?');">
+            <i class="fas fa-bell"></i> Envoyer rappels
+        </a>
+        
+        <a href="?page=admin&section=evenements&action=create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Créer un événement
+        </a>
+    </div>
+</div>
 
                 <div class="table-container">
                     <table class="admin-table">

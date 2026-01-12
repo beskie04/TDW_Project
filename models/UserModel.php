@@ -7,13 +7,13 @@ class UserModel extends BaseModel
     protected $primaryKey = 'id_membre';
 
     /**
-     * Authentifier un utilisateur
+     * Authentifier un utilisateur avec username
      */
-    public function authenticate($email, $password)
+    public function authenticate($username, $password)
     {
-        $sql = "SELECT * FROM {$this->table} WHERE email = :email AND actif = 1";
+        $sql = "SELECT * FROM {$this->table} WHERE username = :username AND actif = 1";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['email' => $email]);
+        $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['mot_de_passe'])) {
@@ -33,6 +33,24 @@ class UserModel extends BaseModel
         $sql = "UPDATE {$this->table} SET derniere_connexion = NOW() WHERE id_membre = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
+    }
+
+    /**
+     * Vérifier si un username existe déjà
+     */
+    public function usernameExists($username, $excludeId = null)
+    {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE username = :username";
+        $params = ['username' => $username];
+
+        if ($excludeId) {
+            $sql .= " AND id_membre != :id";
+            $params['id'] = $excludeId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch()['count'] > 0;
     }
 
     /**

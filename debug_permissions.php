@@ -19,7 +19,8 @@ echo "Role: " . $_SESSION['user']['role_systeme'] . "<br>";
 
 // 2. Check role permissions
 echo "<h2>2. Role Permissions</h2>";
-$sql = "SELECT r.id_role FROM roles WHERE nom = :role";
+// ⭐ FIX: Pas d'alias "r."
+$sql = "SELECT id_role FROM roles WHERE nom = :role";
 $roleResult = $model->query($sql, ['role' => $_SESSION['user']['role_systeme']]);
 
 if (!empty($roleResult)) {
@@ -28,6 +29,8 @@ if (!empty($roleResult)) {
     foreach ($rolePerms as $p) {
         echo "- " . $p['nom'] . " (" . $p['description'] . ")<br>";
     }
+} else {
+    echo "⚠️ Role not found in database!<br>";
 }
 
 // 3. Check user custom permissions
@@ -40,8 +43,11 @@ foreach ($userPerms as $p) {
 
 // 4. Test specific permissions
 echo "<h2>4. Permission Tests</h2>";
-$testsPerms = ['view_projets', 'create_projet', 'edit_own_projet'];
-foreach ($testsPerms as $perm) {
+$testPerms = ['view_projets', 'create_projet', 'edit_own_projet', 'edit_projet'];
+foreach ($testPerms as $perm) {
     $has = hasPermission($perm);
     echo "hasPermission('$perm'): " . ($has ? '✅ YES' : '❌ NO') . "<br>";
 }
+
+echo "<br><hr><br>";
+echo "<a href='?page=profil' style='padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Retour au profil</a>";

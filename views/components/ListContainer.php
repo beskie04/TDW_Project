@@ -1,30 +1,29 @@
 <?php
 /**
- * List Component (Generic Framework Component)
- * Vertical list container for items
- * 
- * @param array $options Configuration:
- *   - 'gap' (string): Gap between items (default: '1.5rem')
- *   - 'cssClass' (string): Additional CSS classes
- * @param callable $content Callback that renders list items
+ * ListContainer Component (Generic Framework Component)
+ * Container for list items with consistent spacing
  */
 
 class ListContainer
 {
-    public static function render($options = [], $content = null)
+    public static function render($options = [], $callback = null)
     {
         $defaults = [
-            'gap' => '1.5rem',
+            'gap' => SPACING_LG,
             'cssClass' => ''
         ];
 
         $options = array_merge($defaults, $options);
-
-        $style = sprintf('display: flex; flex-direction: column; gap: %s;', $options['gap']);
         ?>
-        <div class="list-container <?= htmlspecialchars($options['cssClass']) ?>" style="<?= $style ?>">
-            <?php if ($content && is_callable($content))
-                $content(); ?>
+        <div class="list-container <?= htmlspecialchars($options['cssClass']) ?>"
+             style="display: flex; 
+                    flex-direction: column; 
+                    gap: <?= htmlspecialchars($options['gap']) ?>;">
+            <?php
+            if (is_callable($callback)) {
+                $callback();
+            }
+            ?>
         </div>
         <?php
     }

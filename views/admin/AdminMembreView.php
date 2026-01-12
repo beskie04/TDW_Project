@@ -3,7 +3,6 @@ require_once __DIR__ . '/../BaseView.php';
 require_once __DIR__ . '/../components/Table.php';
 require_once __DIR__ . '/../components/Filter.php';
 require_once __DIR__ . '/../components/FilterBar.php';
-require_once __DIR__ . '/../components/SearchInput.php';
 require_once __DIR__ . '/../components/Button.php';
 require_once __DIR__ . '/../components/Badge.php';
 require_once __DIR__ . '/../components/StatCard.php';
@@ -24,13 +23,21 @@ class AdminMembreView extends BaseView
         <div class="admin-container">
             <?php $this->renderFlashMessage(); ?>
 
-            <!-- Page Header -->
-            <div class="admin-header">
+            <!-- Page Header avec Navigation -->
+            <div class="admin-header" style="margin-bottom: 1rem;">
                 <div>
-                    <h1><i class="fas fa-users"></i> Gestion des Membres</h1>
-                    <p>Gérer les utilisateurs du laboratoire</p>
+                    <h1><i class="fas fa-users"></i> Gestion des Membres & Permissions</h1>
+                    <p>Gérer les utilisateurs et leurs accès</p>
                 </div>
-                <div>
+                <div style="display: flex; gap: 1rem;">
+                    <!-- Bouton Permissions -->
+                    <a href="?page=admin&section=permissions" 
+                       class="btn btn-info"
+                       style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none;">
+                        <i class="fas fa-shield-alt"></i> Gérer les Permissions
+                    </a>
+                    
+                    <!-- Bouton Ajouter -->
                     <?php
                     Button::render([
                         'text' => 'Ajouter un membre',
@@ -41,6 +48,34 @@ class AdminMembreView extends BaseView
                     ?>
                 </div>
             </div>
+
+            <!-- Tabs Navigation -->
+            <div style="background: white; border-radius: 12px 12px 0 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 0;">
+                <div style="display: flex; border-bottom: 2px solid #e5e7eb;">
+                    <a href="?page=admin&section=membres" 
+                       class="tab-link active"
+                       style="padding: 1rem 2rem; text-decoration: none; color: var(--primary-color); font-weight: 600; border-bottom: 3px solid var(--primary-color); position: relative; top: 2px;">
+                        <i class="fas fa-users"></i> Liste des Membres
+                    </a>
+                    <a href="?page=admin&section=permissions&action=userPermissions" 
+                       class="tab-link"
+                       style="padding: 1rem 2rem; text-decoration: none; color: var(--gray-600); font-weight: 500; transition: all 0.3s;">
+                        <i class="fas fa-user-cog"></i> Permissions Individuelles
+                    </a>
+                    <a href="?page=admin&section=permissions&action=roles" 
+                       class="tab-link"
+                       style="padding: 1rem 2rem; text-decoration: none; color: var(--gray-600); font-weight: 500; transition: all 0.3s;">
+                        <i class="fas fa-user-tag"></i> Rôles & Groupes
+                    </a>
+                </div>
+            </div>
+
+            <style>
+            .tab-link:hover {
+                color: var(--primary-color) !important;
+                background: rgba(3, 4, 94, 0.05);
+            }
+            </style>
 
             <!-- Statistics Cards -->
             <div class="stats-grid">
@@ -117,13 +152,7 @@ class AdminMembreView extends BaseView
                     'resetText' => 'Réinitialiser'
                 ],
                 function () use ($roles, $grades, $specialites, $filters) {
-                    SearchInput::render([
-                        'id' => 'search-membres',
-                        'placeholder' => 'Rechercher par nom, email...',
-                        'value' => $filters['search'] ?? '',
-                        'onInput' => 'applyFilters()'
-                    ]);
-
+                   
                     Filter::render([
                         'id' => 'filter-role',
                         'label' => 'Rôle',
@@ -201,7 +230,6 @@ class AdminMembreView extends BaseView
 
         <script>
             function applyFilters() {
-                const search = document.getElementById('search-membres').value;
                 const role = document.getElementById('filter-role').value;
                 const grade = document.getElementById('filter-grade')?.value || '';
                 const specialite = document.getElementById('filter-specialite')?.value || '';
@@ -212,7 +240,7 @@ class AdminMembreView extends BaseView
                 const params = new URLSearchParams({
                     page: 'admin',
                     section: 'membres',
-                    search, role, grade, specialite, actif,
+                    role, grade, specialite, actif,
                     min_publications: minPublications,
                     min_projets: minProjets
                 });
@@ -306,6 +334,14 @@ class AdminMembreView extends BaseView
                 </td>
                 <td>
                     <div class="action-buttons">
+                        <!-- NOUVEAU: Bouton Permissions -->
+                        <a href="?page=admin&section=permissions&action=userPermissions&membre_id=<?= $membre['id_membre'] ?>"
+                            class="btn-icon btn-info" 
+                            title="Gérer les permissions"
+                            style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                            <i class="fas fa-key"></i>
+                        </a>
+                        
                         <button class="btn-icon btn-primary" onclick='editMembre(<?= json_encode($membre) ?>)' title="Modifier">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -331,9 +367,8 @@ class AdminMembreView extends BaseView
         }
     }
 
-    /**
-     * Render Add Member Modal
-     */
+    // ... Le reste des méthodes renderAddModal() et renderEditModal() restent identiques ...
+    
     private function renderAddModal($roles)
     {
         $errors = $_SESSION['errors'] ?? [];
@@ -487,9 +522,6 @@ class AdminMembreView extends BaseView
         );
     }
 
-    /**
-     * Render Edit Member Modal
-     */
     private function renderEditModal($roles)
     {
         $rolesSysteme = [

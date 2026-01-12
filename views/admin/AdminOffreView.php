@@ -15,6 +15,7 @@ class AdminOffreView extends BaseView
 {
     public function __construct()
     {
+         parent::__construct();
         $this->pageTitle = 'Gestion des Offres';
     }
 

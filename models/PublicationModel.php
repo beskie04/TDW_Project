@@ -55,7 +55,7 @@ class PublicationModel extends BaseModel
     }
 
     /**
-     * Filtrer les publications - WITH DEBUG LOGGING
+     * Filtrer les publications pour le public (validées seulement)
      */
     public function filter($filters = [])
     {
@@ -97,6 +97,39 @@ class PublicationModel extends BaseModel
 
         return $this->query($sql, $params);
     }
+
+    /**
+     * Filter publications for admin (includes non-validated)
+     */
+    public function filterAdmin($filters = [])
+    {
+        $sql = "SELECT p.*, t.nom_thematique as domaine_nom
+                FROM {$this->table} p
+                LEFT JOIN thematiques t ON p.id_thematique = t.id_thematique
+                WHERE 1=1";
+
+        $params = [];
+
+        if (isset($filters['type']) && $filters['type'] !== '') {
+            $sql .= " AND p.type = :type";
+            $params['type'] = $filters['type'];
+        }
+
+        if (isset($filters['auteur']) && $filters['auteur'] !== '') {
+            $sql .= " AND p.auteurs LIKE :auteur";
+            $params['auteur'] = '%' . $filters['auteur'] . '%';
+        }
+
+        if (isset($filters['projet']) && $filters['projet'] !== '') {
+            $sql .= " AND p.id_projet = :projet";
+            $params['projet'] = $filters['projet'];
+        }
+
+        $sql .= " ORDER BY p.annee DESC, p.titre ASC";
+
+        return $this->query($sql, $params);
+    }
+
     public function getYears()
     {
         $sql = "SELECT DISTINCT annee FROM {$this->table} WHERE validee = 1 ORDER BY annee DESC";

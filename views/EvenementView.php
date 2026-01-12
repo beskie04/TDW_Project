@@ -14,7 +14,7 @@ require_once __DIR__ . '/components/EmptyState.php';
 class EvenementView extends BaseView
 {
     public function __construct()
-    {
+    { parent::__construct();
         $this->currentPage = 'evenements';
         $this->pageTitle = 'Événements';
     }
@@ -65,24 +65,14 @@ class EvenementView extends BaseView
                             ['value' => 'terminé', 'text' => 'Terminé']
                         ]
                     ]);
-
-                    // Search
-                    ?>
-                    <div class="filter-group">
-                        <label for="search-events">
-                            <i class="fas fa-search"></i>
-                            Rechercher
-                        </label>
-                        <input type="text" id="search-events" class="filter-input" placeholder="Titre, description, lieu...">
-                    </div>
-                    <?php
-                });
+ });
+                 
                 ?>
 
                 <!-- Events Container -->
-                <div id="evenements-container">
-                    <?php $this->renderEvenementsCards($evenements); ?>
-                </div>
+<div id="evenements-container" style="margin-top: 2rem;">
+    <?php $this->renderEvenementsCards($evenements); ?>
+</div>
 
                 <!-- Loading State -->
                 <div id="loading" class="loading" style="display: none;">
@@ -91,61 +81,51 @@ class EvenementView extends BaseView
             </div>
         </main>
 
-        <script>
-            // Filter functionality
-            document.addEventListener('DOMContentLoaded', function () {
-                const filterType = document.getElementById('filter-type');
-                const filterStatut = document.getElementById('filter-statut');
-                const searchInput = document.getElementById('search-events');
-                const resetBtn = document.getElementById('reset-filters');
-                const container = document.getElementById('evenements-container');
-                const loading = document.getElementById('loading');
+      <script>
+    // Filter functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterType = document.getElementById('filter-type');
+        const filterStatut = document.getElementById('filter-statut');
+        const resetBtn = document.getElementById('reset-filters');
+        const container = document.getElementById('evenements-container');
+        const loading = document.getElementById('loading');
 
-                function applyFilters() {
-                    const type = filterType.value;
-                    const statut = filterStatut.value;
-                    const search = searchInput.value;
+        function applyFilters() {
+            const type = filterType.value;
+            const statut = filterStatut.value;
 
-                    loading.style.display = 'block';
-                    container.style.opacity = '0.5';
+            loading.style.display = 'block';
+            container.style.opacity = '0.5';
 
-                    const params = new URLSearchParams({
-                        type: type,
-                        statut: statut,
-                        search: search
-                    });
-
-                    fetch(`?page=evenements&action=filter&${params}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            container.innerHTML = data.html;
-                            loading.style.display = 'none';
-                            container.style.opacity = '1';
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            loading.style.display = 'none';
-                            container.style.opacity = '1';
-                        });
-                }
-
-                filterType.addEventListener('change', applyFilters);
-                filterStatut.addEventListener('change', applyFilters);
-
-                let searchTimeout;
-                searchInput.addEventListener('input', function () {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(applyFilters, 500);
-                });
-
-                resetBtn.addEventListener('click', function () {
-                    filterType.value = '';
-                    filterStatut.value = '';
-                    searchInput.value = '';
-                    applyFilters();
-                });
+            const params = new URLSearchParams({
+                type: type,
+                statut: statut
             });
-        </script>
+
+            fetch(`?page=evenements&action=filter&${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    container.innerHTML = data.html;
+                    loading.style.display = 'none';
+                    container.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loading.style.display = 'none';
+                    container.style.opacity = '1';
+                });
+        }
+
+        filterType.addEventListener('change', applyFilters);
+        filterStatut.addEventListener('change', applyFilters);
+
+        resetBtn.addEventListener('click', function () {
+            filterType.value = '';
+            filterStatut.value = '';
+            applyFilters();
+        });
+    });
+</script>
 
         <?php
         $this->renderFooter();
@@ -175,83 +155,87 @@ class EvenementView extends BaseView
     /**
      * Render single event card
      */
-    private function renderEventCard($event)
-    {
-        $imageUrl = !empty($event['image']) ? UPLOADS_URL . 'evenements/' . $event['image'] : null;
-        $dateDebut = new DateTime($event['date_debut']);
-        $dateFin = $event['date_fin'] ? new DateTime($event['date_fin']) : null;
+  private function renderEventCard($event)
+{
+    $imageUrl = !empty($event['image']) ? UPLOADS_URL . 'evenements/' . $event['image'] : null;
+    $dateDebut = new DateTime($event['date_debut']);
+    $dateFin = $event['date_fin'] ? new DateTime($event['date_fin']) : null;
 
-        $capaciteText = '';
-        if ($event['capacite_max']) {
-            $capaciteText = $event['nb_inscrits'] . '/' . $event['capacite_max'] . ' inscrits';
-        } else {
-            $capaciteText = $event['nb_inscrits'] . ' inscrit(s)';
-        }
-
-        ?>
-        <div class="card">
-            <!-- Header with badges -->
-            <div
-                style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--gray-200);">
-                <?php
-                Badge::render([
-                    'text' => $event['type_nom'] ?? 'Événement',
-                    'color' => $event['type_couleur'] ?? '#007bff',
-                    'size' => 'small'
-                ]);
-
-                Badge::render([
-                    'text' => ucfirst($event['statut']),
-                    'variant' => $this->getStatusVariant($event['statut']),
-                    'size' => 'small'
-                ]);
-                ?>
-            </div>
-
-            <?php if ($imageUrl): ?>
-                <div class="card-image" style="background-image: url('<?= htmlspecialchars($imageUrl) ?>'); height: 200px;"></div>
-            <?php endif; ?>
-
-            <div class="card-content">
-                <h3 class="card-title">
-                    <a href="?page=evenements&action=details&id=<?= $event['id_evenement'] ?>"
-                        style="text-decoration: none; color: inherit;">
-                        <?= htmlspecialchars($event['titre']) ?>
-                    </a>
-                </h3>
-
-                <p class="card-description">
-                    <?= htmlspecialchars(mb_substr($event['description'] ?? '', 0, 120)) ?>...
-                </p>
-
-                <div class="card-footer">
-                    <span class="card-footer-item">
-                        <i class="fas fa-calendar"></i>
-                        <?= $dateDebut->format('d/m/Y H:i') ?>
-                    </span>
-
-                    <?php if ($event['lieu']): ?>
-                        <span class="card-footer-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <?= htmlspecialchars($event['lieu']) ?>
-                        </span>
-                    <?php endif; ?>
-
-                    <span class="card-footer-item">
-                        <i class="fas fa-users"></i>
-                        <?= htmlspecialchars($capaciteText) ?>
-                    </span>
-                </div>
-
-                <a href="?page=evenements&action=details&id=<?= $event['id_evenement'] ?>" class="card-link">
-                    Voir les détails
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-        <?php
+    $capaciteText = '';
+    if ($event['capacite_max']) {
+        $capaciteText = $event['nb_inscrits'] . '/' . $event['capacite_max'] . ' inscrits';
+    } else {
+        $capaciteText = $event['nb_inscrits'] . ' inscrit(s)';
     }
 
+    ?>
+    <div class="card" style="display: flex; flex-direction: column;">
+        <!-- Header with badges -->
+        <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--gray-200);">
+            <?php
+            Badge::render([
+                'text' => $event['type_nom'] ?? 'Événement',
+                'color' => $event['type_couleur'] ?? '#007bff',
+                'size' => 'small'
+            ]);
+
+            Badge::render([
+                'text' => ucfirst($event['statut']),
+                'variant' => $this->getStatusVariant($event['statut']),
+                'size' => 'small'
+            ]);
+            ?>
+        </div>
+
+        <?php if ($imageUrl): ?>
+            <div class="card-image" style="background-image: url('<?= htmlspecialchars($imageUrl) ?>'); height: 200px; background-size: cover; background-position: center;"></div>
+        <?php endif; ?>
+
+        <div class="card-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; flex: 1;">
+            <!-- Title -->
+            <h3 class="card-title" style="margin: 0; font-size: 1.25rem; line-height: 1.4;">
+                <a href="?page=evenements&action=details&id=<?= $event['id_evenement'] ?>"
+                    style="text-decoration: none; color: var(--dark-color);">
+                    <?= htmlspecialchars($event['titre']) ?>
+                </a>
+            </h3>
+
+            <!-- Description -->
+            <p class="card-description" style="margin: 0; color: var(--gray-600); line-height: 1.6; flex: 1;">
+                <?= htmlspecialchars(mb_substr($event['description'] ?? '', 0, 120)) ?>...
+            </p>
+
+            <!-- Footer Info -->
+            <div class="card-footer" style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 0; border-top: 1px solid var(--gray-200); margin-top: auto;">
+                <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray-600); font-size: 0.9rem;">
+                    <i class="fas fa-calendar" style="width: 16px;"></i>
+                    <?= $dateDebut->format('d/m/Y H:i') ?>
+                </span>
+
+                <?php if ($event['lieu']): ?>
+                    <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray-600); font-size: 0.9rem;">
+                        <i class="fas fa-map-marker-alt" style="width: 16px;"></i>
+                        <?= htmlspecialchars($event['lieu']) ?>
+                    </span>
+                <?php endif; ?>
+
+                <span style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray-600); font-size: 0.9rem;">
+                    <i class="fas fa-users" style="width: 16px;"></i>
+                    <?= htmlspecialchars($capaciteText) ?>
+                </span>
+            </div>
+
+            <!-- Link -->
+            <a href="?page=evenements&action=details&id=<?= $event['id_evenement'] ?>" 
+               class="card-link" 
+               style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                Voir les détails
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+    <?php
+}
     /**
      * Render event details page
      */

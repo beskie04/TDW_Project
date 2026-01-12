@@ -17,6 +17,7 @@ class ProjetView extends BaseView
 {
     public function __construct()
     {
+        parent::__construct();
         $this->currentPage = 'projets';
         $this->pageTitle = 'Projets de Recherche';
     }
@@ -44,7 +45,6 @@ class ProjetView extends BaseView
                     'resetText' => 'Réinitialiser',
                     'resetId' => 'reset-filters'
                 ], function () use ($thematiques, $responsables, $statuts) {
-                    // Thematique Filter
                     Filter::render([
                         'id' => 'filter-thematique',
                         'label' => 'Thématique',
@@ -55,7 +55,6 @@ class ProjetView extends BaseView
                         }, $thematiques)
                     ]);
 
-                    // Responsable Filter
                     Filter::render([
                         'id' => 'filter-responsable',
                         'label' => 'Responsable',
@@ -66,7 +65,6 @@ class ProjetView extends BaseView
                         }, $responsables)
                     ]);
 
-                    // Statut Filter
                     Filter::render([
                         'id' => 'filter-statut',
                         'label' => 'Statut',
@@ -132,12 +130,12 @@ class ProjetView extends BaseView
                 'cssClass' => 'thematique-section'
             ], function () use ($groupe) {
                 // Count badge
-                echo '<span class="projet-count" style="margin-left: auto; color: var(--gray-600);">';
+                echo '<span class="projet-count" style="margin-left: auto; color: ' . TEXT_GRAY . ';">';
                 echo count($groupe['projets']) . ' projet(s)';
                 echo '</span>';
 
                 // Projects grid
-                Grid::render(['minWidth' => '350px', 'gap' => '1.5rem'], function () use ($groupe) {
+                Grid::render(['minWidth' => '350px', 'gap' => SPACING_LG], function () use ($groupe) {
                     foreach ($groupe['projets'] as $projet) {
                         $this->renderProjetCard($projet);
                     }
@@ -147,7 +145,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render single project card
+     * Render single project card - FIXED SPACING & CONSTANTS
      */
     private function renderProjetCard($projet)
     {
@@ -184,13 +182,25 @@ class ProjetView extends BaseView
             'icon' => 'fas fa-money-bill-wave',
             'text' => $projet['type_financement_nom'] ?? 'Non défini'
         ];
-
-        // Render card with custom header
         ?>
-        <div class="card">
+        <div class="card" 
+             style="display: flex; 
+                    flex-direction: column; 
+                    height: 100%; 
+                    background: <?= BG_WHITE ?>; 
+                    border-radius: <?= RADIUS_LG ?>; 
+                    box-shadow: <?= SHADOW_MD ?>; 
+                    overflow: hidden;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;">
+            
             <!-- Custom header with badges -->
-            <div
-                style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--gray-200);">
+            <div style="padding: <?= SPACING_LG ?>; 
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        gap: <?= SPACING_MD ?>; 
+                        border-bottom: 1px solid <?= BORDER_GRAY ?>; 
+                        flex-wrap: wrap;">
                 <?php
                 Badge::render([
                     'text' => $projet['thematique_nom'] ?? 'Non défini',
@@ -207,28 +217,64 @@ class ProjetView extends BaseView
             </div>
 
             <!-- Card content -->
-            <div class="card-content">
-                <h3 class="card-title">
+            <div style="padding: <?= SPACING_LG ?>; 
+                        flex: 1; 
+                        display: flex; 
+                        flex-direction: column; 
+                        gap: <?= SPACING_MD ?>;">
+                
+                <h3 style="margin: 0; 
+                           font-size: 1.25rem; 
+                           font-weight: 600; 
+                           line-height: 1.4; 
+                           color: <?= TEXT_DARK ?>;">
                     <a href="?page=projets&action=details&id=<?= $projet['id_projet'] ?>"
-                        style="text-decoration: none; color: inherit;">
+                       style="text-decoration: none; 
+                              color: inherit; 
+                              transition: color 0.2s ease;">
                         <?= htmlspecialchars($projet['titre']) ?>
                     </a>
                 </h3>
 
-                <p class="card-description">
+                <p style="margin: 0; 
+                          color: <?= TEXT_GRAY ?>; 
+                          line-height: 1.6; 
+                          font-size: 0.95rem; 
+                          flex: 1;">
                     <?= htmlspecialchars(mb_substr($projet['description'] ?? '', 0, 150)) ?>...
                 </p>
 
-                <div class="card-footer">
+                <!-- Footer -->
+                <div style="display: flex; 
+                            flex-direction: column; 
+                            gap: <?= SPACING_SM ?>; 
+                            padding-top: <?= SPACING_MD ?>; 
+                            border-top: 1px solid <?= BORDER_GRAY ?>; 
+                            margin-top: auto;">
                     <?php foreach ($footerItems as $item): ?>
-                        <span class="card-footer-item">
-                            <i class="<?= htmlspecialchars($item['icon']) ?>"></i>
+                        <span style="display: flex; 
+                                     align-items: center; 
+                                     gap: <?= SPACING_SM ?>; 
+                                     color: <?= TEXT_GRAY ?>; 
+                                     font-size: 0.875rem;">
+                            <i class="<?= htmlspecialchars($item['icon']) ?>" 
+                               style="color: <?= PRIMARY_COLOR ?>; 
+                                      min-width: 1rem;"></i>
                             <?= htmlspecialchars($item['text']) ?>
                         </span>
                     <?php endforeach; ?>
                 </div>
 
-                <a href="?page=projets&action=details&id=<?= $projet['id_projet'] ?>" class="card-link">
+                <!-- Link -->
+                <a href="?page=projets&action=details&id=<?= $projet['id_projet'] ?>" 
+                   style="display: inline-flex; 
+                          align-items: center; 
+                          gap: <?= SPACING_SM ?>; 
+                          color: <?= PRIMARY_COLOR ?>; 
+                          text-decoration: none; 
+                          font-weight: 600; 
+                          margin-top: <?= SPACING_SM ?>;
+                          transition: gap 0.2s ease;">
                     Voir les détails
                     <i class="fas fa-arrow-right"></i>
                 </a>
@@ -260,8 +306,11 @@ class ProjetView extends BaseView
 
                 <div class="projet-details">
                     <!-- Header -->
-                    <div class="details-header" style="margin-bottom: 2rem;">
-                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="details-header" style="margin-bottom: <?= SPACING_XL ?>;">
+                        <div style="display: flex; 
+                                    gap: <?= SPACING_MD ?>; 
+                                    margin-bottom: <?= SPACING_MD ?>; 
+                                    flex-wrap: wrap;">
                             <?php
                             Badge::render([
                                 'text' => $projet['thematique_nom'] ?? 'Non défini',
@@ -277,16 +326,22 @@ class ProjetView extends BaseView
                             ?>
                         </div>
 
-                        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--dark-color);">
+                        <h1 style="font-size: 2.5rem; 
+                                   margin-bottom: <?= SPACING_MD ?>; 
+                                   color: <?= TEXT_DARK ?>; 
+                                   line-height: 1.2;">
                             <?= htmlspecialchars($projet['titre']) ?>
                         </h1>
 
-                        <p style="color: var(--gray-600); display: flex; align-items: center; gap: 0.5rem;">
+                        <p style="color: <?= TEXT_GRAY ?>; 
+                                  display: flex; 
+                                  align-items: center; 
+                                  gap: <?= SPACING_SM ?>; 
+                                  font-size: 1rem;">
                             <i class="fas fa-calendar"></i>
                             <?= date('d/m/Y', strtotime($projet['date_debut'])) ?>
                             <?php if ($projet['date_fin']): ?>
-                                -
-                                <?= date('d/m/Y', strtotime($projet['date_fin'])) ?>
+                                - <?= date('d/m/Y', strtotime($projet['date_fin'])) ?>
                             <?php else: ?>
                                 - En cours
                             <?php endif; ?>
@@ -294,17 +349,23 @@ class ProjetView extends BaseView
                     </div>
 
                     <!-- Main Content Grid -->
-                    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem; align-items: start;">
+                    <div style="display: grid; 
+                                grid-template-columns: 1fr 350px; 
+                                gap: <?= SPACING_XL ?>; 
+                                align-items: start;">
                         <!-- Left Column: Main Content -->
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: <?= SPACING_XL ?>;">
                             <!-- Description -->
                             <?php
                             Section::render([
                                 'title' => 'Description',
                                 'icon' => 'fas fa-align-left'
                             ], function () use ($projet) {
-                                echo '<div style="padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
-                                echo '<p style="line-height: 1.8; color: var(--gray-700);">';
+                                echo '<div style="padding: ' . SPACING_LG . '; 
+                                                   background: ' . BG_WHITE . '; 
+                                                   border-radius: ' . RADIUS_MD . '; 
+                                                   box-shadow: ' . SHADOW_MD . ';">';
+                                echo '<p style="line-height: 1.8; color: ' . TEXT_DARK . '; margin: 0;">';
                                 echo nl2br(htmlspecialchars($projet['description'] ?? ''));
                                 echo '</p></div>';
                             });
@@ -317,8 +378,11 @@ class ProjetView extends BaseView
                                     'title' => 'Objectifs',
                                     'icon' => 'fas fa-bullseye'
                                 ], function () use ($projet) {
-                                    echo '<div style="padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
-                                    echo '<p style="line-height: 1.8; color: var(--gray-700);">';
+                                    echo '<div style="padding: ' . SPACING_LG . '; 
+                                                       background: ' . BG_WHITE . '; 
+                                                       border-radius: ' . RADIUS_MD . '; 
+                                                       box-shadow: ' . SHADOW_MD . ';">';
+                                    echo '<p style="line-height: 1.8; color: ' . TEXT_DARK . '; margin: 0;">';
                                     echo nl2br(htmlspecialchars($projet['objectifs']));
                                     echo '</p></div>';
                                 });
@@ -332,7 +396,7 @@ class ProjetView extends BaseView
                                     'title' => 'Équipe du projet',
                                     'icon' => 'fas fa-users'
                                 ], function () use ($membres) {
-                                    Grid::render(['minWidth' => '280px', 'gap' => '1rem'], function () use ($membres) {
+                                    Grid::render(['minWidth' => '280px', 'gap' => SPACING_MD], function () use ($membres) {
                                         foreach ($membres as $membre) {
                                             $this->renderMembreCard($membre);
                                         }
@@ -341,14 +405,14 @@ class ProjetView extends BaseView
                                 ?>
                             <?php endif; ?>
 
-                            <!-- Partners Section - NEW! -->
+                            <!-- Partners -->
                             <?php if (!empty($partenaires)): ?>
                                 <?php
                                 Section::render([
                                     'title' => 'Partenaires du projet',
                                     'icon' => 'fas fa-handshake'
                                 ], function () use ($partenaires) {
-                                    Grid::render(['minWidth' => '280px', 'gap' => '1rem'], function () use ($partenaires) {
+                                    Grid::render(['minWidth' => '280px', 'gap' => SPACING_MD], function () use ($partenaires) {
                                         foreach ($partenaires as $partenaire) {
                                             $this->renderPartenaireCard($partenaire);
                                         }
@@ -364,7 +428,7 @@ class ProjetView extends BaseView
                                     'title' => 'Publications associées',
                                     'icon' => 'fas fa-file-alt'
                                 ], function () use ($publications) {
-                                    echo '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+                                    echo '<div style="display: flex; flex-direction: column; gap: ' . SPACING_MD . ';">';
                                     foreach ($publications as $pub) {
                                         $this->renderPublicationCard($pub);
                                     }
@@ -389,14 +453,8 @@ class ProjetView extends BaseView
                                 ]
                             ];
 
-                            if ($projet['budget']) {
-                                $infoItems[] = [
-                                    'label' => 'Budget',
-                                    'value' => number_format($projet['budget'], 0, ',', ' ') . ' DZD'
-                                ];
-                            }
+                          
 
-                            // Add partner count if any
                             if (!empty($partenaires)) {
                                 $infoItems[] = [
                                     'label' => 'Partenaires',
@@ -420,14 +478,19 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render member card (for project team)
+     * Render member card - FIXED SPACING
      */
     private function renderMembreCard($membre)
     {
         $photoUrl = $membre['photo'] ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
         ?>
-        <div
-            style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; gap: 1rem; align-items: center;">
+        <div style="background: <?= BG_WHITE ?>; 
+                    padding: <?= SPACING_LG ?>; 
+                    border-radius: <?= RADIUS_MD ?>; 
+                    box-shadow: <?= SHADOW_MD ?>; 
+                    display: flex; 
+                    gap: <?= SPACING_MD ?>; 
+                    align-items: center;">
             <?php
             Avatar::render([
                 'src' => $photoUrl,
@@ -436,13 +499,21 @@ class ProjetView extends BaseView
             ]);
             ?>
             <div style="flex: 1;">
-                <h4 style="margin: 0 0 0.25rem 0; color: var(--dark-color);">
+                <h4 style="margin: 0 0 <?= SPACING_XS ?> 0; 
+                           color: <?= TEXT_DARK ?>; 
+                           font-size: 1rem; 
+                           font-weight: 600;">
                     <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
                 </h4>
-                <p style="margin: 0; color: var(--primary-color); font-weight: 600; font-size: 0.9rem;">
+                <p style="margin: 0 0 <?= SPACING_XS ?> 0; 
+                          color: <?= PRIMARY_COLOR ?>; 
+                          font-weight: 600; 
+                          font-size: 0.9rem;">
                     <?= htmlspecialchars($membre['role_projet'] ?? 'Membre') ?>
                 </p>
-                <p style="margin: 0.25rem 0 0 0; color: var(--gray-600); font-size: 0.85rem;">
+                <p style="margin: 0; 
+                          color: <?= TEXT_GRAY ?>; 
+                          font-size: 0.85rem;">
                     <?= htmlspecialchars($membre['grade'] ?? '') ?>
                 </p>
             </div>
@@ -451,31 +522,55 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render partner card - NEW!
+     * Render partner card - FIXED SPACING & CONSTANTS
      */
     private function renderPartenaireCard($partenaire)
     {
         $logoUrl = !empty($partenaire['logo']) ? UPLOADS_URL . 'logos/' . $partenaire['logo'] : null;
         ?>
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="background: <?= BG_WHITE ?>; 
+                    padding: <?= SPACING_LG ?>; 
+                    border-radius: <?= RADIUS_MD ?>; 
+                    box-shadow: <?= SHADOW_MD ?>; 
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: <?= SPACING_MD ?>;">
+            
             <?php if ($logoUrl): ?>
-                <div
-                    style="display: flex; justify-content: center; margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                    <img src="<?= htmlspecialchars($logoUrl) ?>" alt="<?= htmlspecialchars($partenaire['nom']) ?>"
-                        style="max-height: 80px; max-width: 100%; object-fit: contain;">
+                <div style="display: flex; 
+                            justify-content: center; 
+                            padding: <?= SPACING_MD ?>; 
+                            background: <?= BG_GRAY_LIGHT ?>; 
+                            border-radius: <?= RADIUS_MD ?>;">
+                    <img src="<?= htmlspecialchars($logoUrl) ?>" 
+                         alt="<?= htmlspecialchars($partenaire['nom']) ?>"
+                         style="max-height: 80px; 
+                                max-width: 100%; 
+                                object-fit: contain;">
                 </div>
             <?php else: ?>
-                <div
-                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 1rem; padding: 2rem; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border-radius: 8px;">
-                    <i class="fas fa-handshake" style="font-size: 3rem; color: white;"></i>
+                <div style="display: flex; 
+                            justify-content: center; 
+                            align-items: center; 
+                            padding: <?= SPACING_XL ?>; 
+                            background: linear-gradient(135deg, <?= PRIMARY_COLOR ?>, <?= ACCENT_COLOR ?>); 
+                            border-radius: <?= RADIUS_MD ?>;">
+                    <i class="fas fa-handshake" style="font-size: 3rem; color: <?= TEXT_WHITE ?>;"></i>
                 </div>
             <?php endif; ?>
 
-            <h4 style="margin: 0 0 0.5rem 0; color: var(--dark-color); font-size: 1.1rem; text-align: center;">
+            <h4 style="margin: 0; 
+                       color: <?= TEXT_DARK ?>; 
+                       font-size: 1.1rem; 
+                       text-align: center; 
+                       font-weight: 600;">
                 <?= htmlspecialchars($partenaire['nom']) ?>
             </h4>
 
-            <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; 
+                        justify-content: center; 
+                        gap: <?= SPACING_SM ?>; 
+                        flex-wrap: wrap;">
                 <?php
                 Badge::render([
                     'text' => $partenaire['type_partenaire'] ?? 'Partenaire',
@@ -494,16 +589,28 @@ class ProjetView extends BaseView
             </div>
 
             <?php if (!empty($partenaire['description'])): ?>
-                <p style="margin: 0.75rem 0 0 0; color: var(--gray-600); font-size: 0.9rem; line-height: 1.5; text-align: center;">
+                <p style="margin: 0; 
+                          color: <?= TEXT_GRAY ?>; 
+                          font-size: 0.9rem; 
+                          line-height: 1.5; 
+                          text-align: center;">
                     <?= htmlspecialchars(mb_substr($partenaire['description'], 0, 100)) ?>
                     <?= strlen($partenaire['description']) > 100 ? '...' : '' ?>
                 </p>
             <?php endif; ?>
 
             <?php if (!empty($partenaire['site_web'])): ?>
-                <div style="text-align: center; margin-top: 1rem;">
-                    <a href="<?= htmlspecialchars($partenaire['site_web']) ?>" target="_blank" rel="noopener noreferrer"
-                        style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                <div style="text-align: center;">
+                    <a href="<?= htmlspecialchars($partenaire['site_web']) ?>" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       style="color: <?= PRIMARY_COLOR ?>; 
+                              text-decoration: none; 
+                              font-size: 0.9rem; 
+                              display: inline-flex; 
+                              align-items: center; 
+                              gap: <?= SPACING_XS ?>; 
+                              font-weight: 600;">
                         <i class="fas fa-external-link-alt"></i>
                         Visiter le site
                     </a>
@@ -511,15 +618,17 @@ class ProjetView extends BaseView
             <?php endif; ?>
 
             <?php if (!empty($partenaire['date_debut']) || !empty($partenaire['date_fin'])): ?>
-                <div
-                    style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-200); font-size: 0.85rem; color: var(--gray-600); text-align: center;">
+                <div style="padding-top: <?= SPACING_MD ?>; 
+                            border-top: 1px solid <?= BORDER_GRAY ?>; 
+                            font-size: 0.85rem; 
+                            color: <?= TEXT_GRAY ?>; 
+                            text-align: center;">
                     <i class="fas fa-calendar"></i>
                     <?php if (!empty($partenaire['date_debut'])): ?>
                         <?= date('d/m/Y', strtotime($partenaire['date_debut'])) ?>
                     <?php endif; ?>
                     <?php if (!empty($partenaire['date_fin'])): ?>
-                        -
-                        <?= date('d/m/Y', strtotime($partenaire['date_fin'])) ?>
+                        - <?= date('d/m/Y', strtotime($partenaire['date_fin'])) ?>
                     <?php elseif (!empty($partenaire['date_debut'])): ?>
                         - En cours
                     <?php endif; ?>
@@ -530,12 +639,18 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render publication card
+     * Render publication card - FIXED SPACING
      */
     private function renderPublicationCard($pub)
     {
         ?>
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="background: <?= BG_WHITE ?>; 
+                    padding: <?= SPACING_LG ?>; 
+                    border-radius: <?= RADIUS_MD ?>; 
+                    box-shadow: <?= SHADOW_MD ?>; 
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: <?= SPACING_SM ?>;">
             <?php
             Badge::render([
                 'text' => $pub['type'],
@@ -543,13 +658,24 @@ class ProjetView extends BaseView
                 'size' => 'small'
             ]);
             ?>
-            <h4 style="margin: 0.75rem 0 0.5rem 0; color: var(--dark-color);">
+            <h4 style="margin: 0; 
+                       color: <?= TEXT_DARK ?>; 
+                       font-size: 1rem; 
+                       font-weight: 600; 
+                       line-height: 1.4;">
                 <?= htmlspecialchars($pub['titre']) ?>
             </h4>
-            <p style="margin: 0 0 0.5rem 0; color: var(--gray-600); font-size: 0.9rem;">
+            <p style="margin: 0; 
+                      color: <?= TEXT_GRAY ?>; 
+                      font-size: 0.9rem;">
                 <?= htmlspecialchars($pub['auteurs']) ?>
             </p>
-            <p style="margin: 0; color: var(--gray-500); font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            <p style="margin: 0; 
+                      color: <?= TEXT_LIGHT ?>; 
+                      font-size: 0.85rem; 
+                      display: flex; 
+                      align-items: center; 
+                      gap: <?= SPACING_SM ?>;">
                 <i class="fas fa-calendar"></i>
                 <?= htmlspecialchars($pub['annee']) ?>
             </p>
@@ -558,18 +684,17 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Get badge variant based on status
+     * Get badge variant based on status - USES CONSTANTS
      */
     private function getStatusVariant($statut)
     {
         $statut = strtolower($statut);
 
-        if (strpos($statut, 'cours') !== false)
-            return 'success';
-        if (strpos($statut, 'termin') !== false)
-            return 'default';
-        if (strpos($statut, 'soumis') !== false)
-            return 'warning';
+        if (strpos($statut, 'cours') !== false) return 'success';
+        if (strpos($statut, 'termin') !== false) return 'default';
+        if (strpos($statut, 'soumis') !== false) return 'warning';
+        if (strpos($statut, 'planifi') !== false) return 'info';
+        if (strpos($statut, 'suspendu') !== false) return 'danger';
 
         return 'default';
     }

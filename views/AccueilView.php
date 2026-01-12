@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
-// Generic Framework Components
 require_once __DIR__ . '/components/Slider.php';
 require_once __DIR__ . '/components/Section.php';
 require_once __DIR__ . '/components/Card.php';
@@ -11,14 +10,16 @@ require_once __DIR__ . '/components/Badge.php';
 require_once __DIR__ . '/components/Avatar.php';
 
 class AccueilView extends BaseView
-{
+{ 
+  
     public function __construct()
     {
+        parent::__construct();
         $this->currentPage = 'accueil';
         $this->pageTitle = 'Accueil - Laboratoire Universitaire';
     }
 
-    public function render($actualitesSlider, $actualites, $organigramme, $evenements, $currentPage, $totalPages, $partenaires)
+   public function render($actualitesSlider, $actualites, $organigramme, $evenements, $currentPage, $totalPages, $partenaires)
     {
         $this->renderHeader();
         $this->renderFlashMessage();
@@ -27,44 +28,62 @@ class AccueilView extends BaseView
         <main>
             <!-- Hero Slider -->
             <?php
+            // ⭐ FIX: Vérifier que $actualitesSlider est bien un tableau
+            if (!is_array($actualitesSlider)) {
+                $actualitesSlider = [];
+            }
+
+            // ⭐ FIX: Adapter les slides selon les données reçues
             $slides = array_map(function ($actu) {
+                // Déterminer le chemin de l'image selon le type
+                $imagePath = null;
+                if (!empty($actu['image'])) {
+                    // Si c'est un événement
+                    if (isset($actu['type']) && $actu['type'] === 'evenement') {
+                        $imagePath = UPLOADS_URL . 'evenements/' . $actu['image'];
+                    } else {
+                        $imagePath = UPLOADS_URL . 'actualites/' . $actu['image'];
+                    }
+                }
+
                 return [
-                    'image' => !empty($actu['image']) ? UPLOADS_URL . 'actualites/' . $actu['image'] : null,
-                    'badge' => $actu['type'],
-                    'title' => $actu['titre'],
-                    'description' => $actu['description'],
+                    'image' => $imagePath,
+                    'badge' => isset($actu['type']) ? ucfirst($actu['type']) : 'Actualité',
+                    'title' => $actu['titre'] ?? 'Sans titre',
+                    'description' => $actu['description'] ?? '',
                     'link' => !empty($actu['lien']) ? ['url' => $actu['lien'], 'text' => 'En savoir plus'] : null
                 ];
             }, $actualitesSlider);
 
-            Slider::render($slides, [
-                'height' => '600px',
-                'autoplayDelay' => 5000
-            ]);
+            // ⭐ Si pas de slides, afficher un message
+            if (empty($slides)) {
+                echo '<div style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); 
+                             padding: 4rem 2rem; text-align: center; color: white;">
+                        <h1 style="margin: 0 0 1rem 0; font-size: 2.5rem;">Bienvenue au Laboratoire</h1>
+                        <p style="font-size: 1.25rem; margin: 0;">Centre d\'Excellence en Recherche Informatique</p>
+                      </div>';
+            } else {
+                Slider::render($slides, [
+                    'height' => '600px',
+                    'autoplayDelay' => 5000
+                ]);
+            }
             ?>
 
             <div class="content-wrapper">
                 <div class="container">
 
-                    <!-- ========================================
-                         SECTION 1: Actualités Scientifiques
-                         ======================================== -->
-                    <?php $this->renderActualitesSection($actualites); ?>
+                    <!-- SECTION 1: Actualités Scientifiques -->
+                    <?php $this->renderActualitesSection($actualites ?? []); ?>
 
-                    <!-- ========================================
-                         SECTION 2: Présentation et Organigramme
-                         ======================================== -->
-                    <?php $this->renderPresentationSection($organigramme); ?>
+                    <!-- SECTION 2: Présentation et Organigramme -->
+                    <?php $this->renderPresentationSection($organigramme ?? []); ?>
 
-                    <!-- ========================================
-                         SECTION 3: Événements à venir
-                         ======================================== -->
-                    <?php $this->renderEvenementsSection($evenements, $currentPage, $totalPages); ?>
+                    <!-- SECTION 3: Événements à venir -->
+                    <?php $this->renderEvenementsSection($evenements ?? [], $currentPage, $totalPages); ?>
 
-                    <!-- ========================================
-                         SECTION 4: Partenaires
-                         ======================================== -->
-                    <?php $this->renderPartenairesSection($partenaires); ?>
+                    <!-- SECTION 4: Partenaires -->
+                    <?php $this->renderPartenairesSection($partenaires ?? []); ?>
 
                 </div>
             </div>
@@ -74,8 +93,8 @@ class AccueilView extends BaseView
         $this->renderFooter();
     }
 
-    /**
-     * SECTION 1: Actualités scientifiques (nouveaux projets, publications, collaborations)
+/**
+     * SECTION 1: Actualités scientifiques (VERSION CORRIGÉE)
      */
     private function renderActualitesSection($actualites)
     {
@@ -84,25 +103,37 @@ class AccueilView extends BaseView
             'icon' => 'fas fa-newspaper',
             'cssClass' => 'home-section'
         ], function () use ($actualites) {
-            if (empty($actualites)) {
+            if (empty($actualites) || !is_array($actualites)) {
                 echo '<p style="text-align: center; color: var(--gray-600); padding: 2rem;">Aucune actualité pour le moment</p>';
                 return;
             }
 
             Grid::render(['minWidth' => '350px', 'gap' => '1.5rem'], function () use ($actualites) {
                 foreach ($actualites as $actu) {
+                    // ⭐ Sécurité: vérifier que $actu est bien un tableau
+                    if (!is_array($actu)) continue;
+                    
+                    // ⭐ Déterminer le lien
+                    $link = $this->getLinkForActualite($actu);
+                    $badgeColor = $this->getBadgeColorForType($actu['type'] ?? 'autre');
+                    
+                    // Date de publication
+                    $dateStr = isset($actu['date_publication']) 
+                        ? date('d/m/Y', strtotime($actu['date_publication'])) 
+                        : 'Date inconnue';
+                    
                     Card::render([
-                        'image' => !empty($actu['image']) ? UPLOADS_URL . 'actualites/' . $actu['image'] : null,
+                        'image' => !empty($actu['image']) ? UPLOADS_URL . 'evenements/' . $actu['image'] : null,
                         'imageHeight' => '200px',
-                        'badge' => ucfirst($actu['type']),
-                        'badgeColor' => $this->getActualiteColor($actu['type']),
-                        'title' => $actu['titre'],
-                        'description' => mb_substr($actu['description'], 0, 120) . '...',
+                        'badge' => ucfirst($actu['type'] ?? 'Actualité'),
+                        'badgeColor' => $badgeColor,
+                        'title' => $actu['titre'] ?? 'Sans titre',
+                        'description' => isset($actu['description']) ? mb_substr($actu['description'], 0, 120) . '...' : '',
                         'footer' => [
-                            ['icon' => 'fas fa-calendar', 'text' => date('d/m/Y', strtotime($actu['date_publication']))]
+                            ['icon' => 'fas fa-calendar', 'text' => $dateStr]
                         ],
-                        'link' => !empty($actu['lien']) ? [
-                            'url' => $actu['lien'],
+                        'link' => $link ? [
+                            'url' => $link,
                             'text' => 'Lire la suite',
                             'icon' => 'fas fa-arrow-right'
                         ] : null
@@ -113,76 +144,155 @@ class AccueilView extends BaseView
     }
 
     /**
-     * SECTION 2: Présentation brève du laboratoire et organigramme
+     * Helper: Récupérer le lien correct selon le type
      */
-    private function renderPresentationSection($organigramme)
+    private function getLinkForActualite($actu)
     {
-        Section::render([
-            'title' => 'À propos du Laboratoire',
-            'icon' => 'fas fa-info-circle',
-            'cssClass' => 'home-section'
-        ], function () use ($organigramme) {
-            ?>
-            <!-- Présentation du laboratoire -->
-            <div
-                style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <p style="line-height: 1.8; color: var(--gray-700); margin: 0 0 1rem 0; font-size: 1.05rem;">
-                    Le <strong>Laboratoire de Recherche en Informatique</strong> de l'École Supérieure d'Informatique
-                    est un centre d'excellence dédié à l'innovation et à la recherche de pointe dans divers domaines de
-                    l'informatique. Nos équipes travaillent sur des problématiques actuelles telles que l'intelligence
-                    artificielle, la cybersécurité, le cloud computing et les systèmes embarqués.
-                </p>
-                <p style="line-height: 1.8; color: var(--gray-700); margin: 0; font-size: 1.05rem;">
-                    Fort d'une équipe de chercheurs expérimentés et de doctorants talentueux, le laboratoire collabore
-                    avec des partenaires académiques et industriels nationaux et internationaux.
-                </p>
-            </div>
+        if (!is_array($actu)) return null;
 
-            <!-- Organigramme -->
-            <div style="margin-top: 2rem;">
-                <h3
-                    style="display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1.5rem 0; color: var(--dark-color); font-size: 1.5rem;">
-                    <i class="fas fa-sitemap"></i>
-                    Organigramme
-                </h3>
+        // Si un lien est déjà fourni
+        if (!empty($actu['lien']) && $actu['lien'] !== '#') {
+            return $actu['lien'];
+        }
 
-                <?php if (empty($organigramme)): ?>
-                    <p style="text-align: center; color: var(--gray-600); padding: 2rem;">Organigramme à venir</p>
-                <?php else: ?>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                        <?php foreach ($organigramme as $membre): ?>
-                            <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-                                        border-left: 4px solid <?= $this->getPosteColor($membre['poste']) ?>;">
-                                <div style="display: flex; gap: 1rem; align-items: center;">
-                                    <?php
-                                    $photoUrl = !empty($membre['photo']) ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
-                                    Avatar::render([
-                                        'src' => $photoUrl,
-                                        'alt' => $membre['nom'] . ' ' . $membre['prenom'],
-                                        'size' => 'large'
-                                    ]);
-                                    ?>
-                                    <div style="flex: 1;">
-                                        <p
-                                            style="margin: 0 0 0.25rem 0; font-size: 0.875rem; color: var(--primary-color); font-weight: 600;">
-                                            <?= htmlspecialchars($membre['poste']) ?>
-                                        </p>
-                                        <h4 style="margin: 0 0 0.25rem 0; color: var(--dark-color); font-size: 1.1rem;">
-                                            <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
-                                        </h4>
-                                        <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
-                                            <?= htmlspecialchars($membre['grade']) ?>
-                                        </p>
-                                    </div>
+        // Construire le lien selon le type
+        $type = strtolower($actu['type'] ?? '');
+        $id = $actu['id_entite'] ?? null;
+
+        if (!$id) return null;
+
+        switch ($type) {
+            case 'projet':
+                return "?page=projets&action=details&id={$id}";
+            
+            case 'publication':
+                return "?page=publications&action=details&id={$id}";
+            
+            case 'evenement':
+                return "?page=evenements&action=details&id={$id}";
+            
+            case 'annonce':
+                return "#";
+            
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Helper: Couleur du badge selon le type
+     */
+    private function getBadgeColorForType($type)
+    {
+        $colors = [
+            'projet' => '#3b82f6',
+            'publication' => '#10b981',
+            'evenement' => '#f59e0b',
+            'annonce' => '#ef4444',
+            'collaboration' => '#8b5cf6',
+            'soutenance' => '#ec4899'
+        ];
+
+        return $colors[strtolower($type)] ?? '#6b7280';
+    }
+   private function renderPresentationSection($organigramme)
+{
+    Section::render([
+        'title' => 'À propos du Laboratoire',
+        'icon' => 'fas fa-info-circle',
+        'cssClass' => 'home-section'
+    ], function () use ($organigramme) {
+        ?>
+        <!-- Présentation du laboratoire -->
+        <div style="background: <?= BG_WHITE ?>; 
+                    padding: 2rem; 
+                    border-radius: 12px; 
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+                    margin-bottom: 2rem;">
+            <p style="line-height: 1.8; 
+                      color: <?= TEXT_DARK ?>; 
+                      margin: 0 0 1rem 0; 
+                      font-size: 1.05rem;">
+                Le <strong>Laboratoire de Recherche en Informatique</strong> de l'École Supérieure d'Informatique
+                est un centre d'excellence dédié à l'innovation et à la recherche de pointe dans divers domaines de
+                l'informatique. Nos équipes travaillent sur des problématiques actuelles telles que l'intelligence
+                artificielle, la cybersécurité, le cloud computing et les systèmes embarqués.
+            </p>
+            <p style="line-height: 1.8; 
+                      color: <?= TEXT_DARK ?>; 
+                      margin: 0; 
+                      font-size: 1.05rem;">
+                Fort d'une équipe de chercheurs expérimentés et de doctorants talentueux, le laboratoire collabore
+                avec des partenaires académiques et industriels nationaux et internationaux.
+            </p>
+        </div>
+
+        <!-- Organigramme -->
+        <div style="margin-top: 2rem;">
+            <h3 style="display: flex; 
+                       align-items: center; 
+                       gap: 0.5rem; 
+                       margin: 0 0 1.5rem 0; 
+                       color: <?= TEXT_DARK ?>; 
+                       font-size: 1.5rem;">
+                <i class="fas fa-sitemap"></i>
+                Organigramme
+            </h3>
+
+            <?php if (empty($organigramme)): ?>
+                <p style="text-align: center; 
+                          color: <?= TEXT_GRAY ?>; 
+                          padding: 2rem;">
+                    Organigramme à venir
+                </p>
+            <?php else: ?>
+                <div style="display: grid; 
+                            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+                            gap: 1.5rem;">
+                    <?php foreach ($organigramme as $membre): ?>
+                        <div style="background: <?= BG_WHITE ?>; 
+                                    padding: 1.5rem; 
+                                    border-radius: 12px; 
+                                    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+                                    border-left: 4px solid <?= $this->getPosteColor($membre['poste']) ?>;">
+                            <div style="display: flex; 
+                                        gap: 1rem; 
+                                        align-items: center;">
+                                <?php
+                                $photoUrl = !empty($membre['photo']) ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
+                                Avatar::render([
+                                    'src' => $photoUrl,
+                                    'alt' => $membre['nom'] . ' ' . $membre['prenom'],
+                                    'size' => 'large'
+                                ]);
+                                ?>
+                                <div style="flex: 1;">
+                                    <p style="margin: 0 0 0.25rem 0; 
+                                              font-size: 0.875rem; 
+                                              color: <?= PRIMARY_COLOR ?>; 
+                                              font-weight: 600;">
+                                        <?= htmlspecialchars($membre['poste']) ?>
+                                    </p>
+                                    <h4 style="margin: 0 0 0.25rem 0; 
+                                               color: <?= TEXT_DARK ?>; 
+                                               font-size: 1.1rem;">
+                                        <?= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']) ?>
+                                    </h4>
+                                    <p style="margin: 0; 
+                                              color: <?= TEXT_GRAY ?>; 
+                                              font-size: 0.875rem;">
+                                        <?= htmlspecialchars($membre['grade']) ?>
+                                    </p>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <?php
-        });
-    }
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    });
+}
 
     /**
      * SECTION 3: Événements à venir avec pagination
@@ -271,9 +381,7 @@ class AccueilView extends BaseView
                         style="margin: 0 0 1rem 0; color: var(--dark-color); font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="<?= $this->getPartenaireIcon($type) ?>"></i>
                         <?= ucfirst($type) ?>s
-                        <span style="font-size: 0.875rem; color: var(--gray-500); font-weight: normal;">(
-                            <?= count($partenairesList) ?>)
-                        </span>
+                        
                     </h3>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
@@ -353,27 +461,29 @@ class AccueilView extends BaseView
     }
 
     /**
-     * Helpers pour les couleurs
+     * Helpers pour les couleurs - MAINTENANT UTILISE LES CONSTANTES
      */
     private function getActualiteColor($type)
     {
         $colors = [
-            'projet' => '#3b82f6',
-            'publication' => '#10b981',
-            'collaboration' => '#f59e0b',
-            'soutenance' => '#8b5cf6',
-            'evenement' => '#ef4444'
+            'projet' => COLOR_PROJET,
+            'publication' => COLOR_PUBLICATION,
+            'collaboration' => COLOR_COLLABORATION,
+            'soutenance' => COLOR_SOUTENANCE,
+            'evenement' => COLOR_EVENEMENT
         ];
-        return $colors[strtolower($type)] ?? 'var(--primary-color)';
+        return $colors[strtolower($type)] ?? PRIMARY_COLOR;
     }
 
     private function getPosteColor($poste)
     {
-        if (strpos(strtolower($poste), 'directeur') !== false)
-            return '#3b82f6';
-        if (strpos(strtolower($poste), 'chef') !== false)
-            return '#10b981';
-        return '#f59e0b';
+        if (strpos(strtolower($poste), 'directeur') !== false) {
+            return COLOR_DIRECTEUR;
+        }
+        if (strpos(strtolower($poste), 'chef') !== false) {
+            return COLOR_CHEF;
+        }
+        return COLOR_MEMBRE_DEFAULT;
     }
 
     private function getPartenaireIcon($type)

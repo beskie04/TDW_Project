@@ -22,6 +22,7 @@ class AdminEquipeView extends BaseView
 {
     public function __construct()
     {
+         parent::__construct();
         $this->currentPage = 'admin-equipes';
         $this->pageTitle = 'Gestion des Équipes';
     }

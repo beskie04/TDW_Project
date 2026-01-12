@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../utils/PermissionHelper.php';
 require_once __DIR__ . '/../../models/PublicationModel.php';
 require_once __DIR__ . '/../../views/admin/AdminPublicationView.php';
 require_once __DIR__ . '/../../views/BaseView.php';
@@ -11,14 +12,14 @@ class AdminPublicationController
 
     public function __construct()
     {
-        $this->checkAdmin();
+        $this->checkAccess();
         $this->model = new PublicationModel();
         $this->view = new AdminPublicationView();
     }
 
-    private function checkAdmin()
+    private function checkAccess()
     {
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+        if (!isset($_SESSION['user'])) {
             header('Location: ?page=login');
             exit;
         }
@@ -26,16 +27,58 @@ class AdminPublicationController
 
     public function index()
     {
-        $publications = $this->model->getAllWithDetails();
+        // Check permission
+        if (!hasPermission('view_publications')) {
+            BaseView::setFlash('Accès refusé. Permission requise: voir les publications', 'error');
+            header('Location: ?page=admin');
+            exit;
+        }
+
+        // Get filter values from GET
+        $filters = [
+            'type' => $_GET['type'] ?? '',
+            'auteur' => $_GET['auteur'] ?? '',
+            'projet' => $_GET['projet'] ?? ''
+        ];
+
+        // Remove empty filters
+        $filters = array_filter($filters, function ($value) {
+            return $value !== '';
+        });
+
+        // Si l'utilisateur ne peut voir que SES publications
+        $onlyOwn = !hasPermission('view_publications') && hasPermission('view_own_publications');
+
+        if ($onlyOwn) {
+            // Récupérer seulement les publications dont il est auteur
+            $filters['auteur'] = $_SESSION['user']['nom'];
+        }
+
+        // Get filtered publications
+        if (!empty($filters)) {
+            $publications = $this->model->filterAdmin($filters);
+        } else {
+            $publications = $this->model->getAllWithDetails();
+        }
+
         $stats = $this->model->getStatistics();
-        $this->view->renderListe($publications, $stats);
+
+        // Get data for filters
+        $types = TYPES_PUBLICATIONS;
+        $auteurs = $this->model->getAuteurs();
+        $projets = $this->model->query("SELECT id_projet, titre FROM projets ORDER BY titre");
+
+        $this->view->renderListe($publications, $stats, $types, $auteurs, $projets);
     }
 
-    /**
-     * Display statistics page - NEW!
-     */
     public function stats()
     {
+        if (!hasPermission('view_publication_stats')) {
+            BaseView::setFlash('Accès refusé. Permission requise: voir les statistiques', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         $stats = $this->getEnhancedStatistics();
         $types = TYPES_PUBLICATIONS;
         $auteurs = $this->model->getAuteurs();
@@ -45,17 +88,19 @@ class AdminPublicationController
         $this->view->renderStatistics($stats, $types, $auteurs, $annees, $projets);
     }
 
-    /**
-     * Generate PDF report - NEW!
-     */
     public function generate_pdf()
     {
+        if (!hasPermission('generate_publication_pdf')) {
+            BaseView::setFlash('Accès refusé. Permission requise: générer des PDF', 'error');
+            header('Location: ?page=admin&section=publications&action=stats');
+            exit;
+        }
+
         $type = $_GET['type'] ?? 'all';
         $filters = [];
         $publications = [];
         $title = 'Rapport des Publications';
 
-        // Build filters based on type
         switch ($type) {
             case 'type':
                 $typeValue = $_GET['type_value'] ?? '';
@@ -93,10 +138,8 @@ class AdminPublicationController
                 break;
         }
 
-        // Get filtered publications
         $publications = $this->getFilteredPublications($filters);
 
-        // Generate PDF
         try {
             $this->generatePublicationsPdf($publications, $title, $filters);
         } catch (Exception $e) {
@@ -108,12 +151,25 @@ class AdminPublicationController
 
     public function pending()
     {
+        // Seul l'admin peut voir les publications en attente
+        if ($_SESSION['user']['role'] !== 'admin') {
+            BaseView::setFlash('Accès refusé. Seul un administrateur peut valider les publications', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         $publications = $this->model->getPending();
         $this->view->renderPending($publications);
     }
 
     public function create()
     {
+        if (!hasPermission('create_publication') && !hasPermission('create_own_publication')) {
+            BaseView::setFlash('Accès refusé. Permission requise: créer une publication', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         $types = TYPES_PUBLICATIONS;
         $domaines = $this->getDomaines();
         $this->view->renderForm(null, $types, $domaines);
@@ -121,6 +177,12 @@ class AdminPublicationController
 
     public function store()
     {
+        if (!hasPermission('create_publication') && !hasPermission('create_own_publication')) {
+            BaseView::setFlash('Accès refusé. Permission requise: créer une publication', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ?page=admin&section=publications');
             exit;
@@ -133,10 +195,20 @@ class AdminPublicationController
             exit;
         }
 
-        // Prepare data with AUTO-CATEGORIZATION
+        // Préparer les auteurs
+        $auteurs = $_POST['auteurs'];
+
+        // Si permission "own" seulement, ajouter automatiquement l'utilisateur comme auteur
+        if (hasPermission('create_own_publication') && !hasPermission('create_publication')) {
+            $userName = $_SESSION['user']['nom'] . ' ' . $_SESSION['user']['prenom'];
+            if (strpos($auteurs, $userName) === false) {
+                $auteurs = $userName . ', ' . $auteurs;
+            }
+        }
+
         $data = [
             'titre' => $_POST['titre'],
-            'auteurs' => $_POST['auteurs'],
+            'auteurs' => $auteurs,
             'annee' => $_POST['annee'],
             'type' => $_POST['type'],
             'id_thematique' => $_POST['id_thematique'],
@@ -146,13 +218,13 @@ class AdminPublicationController
             'validee' => 0
         ];
 
-        // AUTO-CATEGORIZE: Detect project based on keywords
+        // Auto-catégoriser le projet
         $detectedProject = $this->detectProject($data['titre'], $data['resume'] ?? '');
         if ($detectedProject) {
             $data['id_projet'] = $detectedProject;
         }
 
-        // Handle file upload
+        // Gérer l'upload du fichier
         if (isset($_FILES['fichier']) && $_FILES['fichier']['error'] === 0) {
             $uploadResult = $this->handleFileUpload($_FILES['fichier']);
             if ($uploadResult['success']) {
@@ -191,6 +263,19 @@ class AdminPublicationController
             exit;
         }
 
+        // Vérifier si l'utilisateur est auteur
+        $userName = $_SESSION['user']['nom'] . ' ' . $_SESSION['user']['prenom'];
+        $isAuthor = (strpos($publication['auteurs'], $userName) !== false);
+
+        if (
+            !hasPermission('edit_publication') &&
+            !($isAuthor && hasPermission('edit_own_publication'))
+        ) {
+            BaseView::setFlash('Accès refusé. Permission requise: modifier cette publication', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         $types = TYPES_PUBLICATIONS;
         $domaines = $this->getDomaines();
         $this->view->renderForm($publication, $types, $domaines);
@@ -205,6 +290,26 @@ class AdminPublicationController
 
         $id = $_POST['id'] ?? null;
         if (!$id) {
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
+        $publication = $this->model->getById($id);
+        if (!$publication) {
+            BaseView::setFlash('Publication introuvable', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
+        // Vérifier si l'utilisateur est auteur
+        $userName = $_SESSION['user']['nom'] . ' ' . $_SESSION['user']['prenom'];
+        $isAuthor = (strpos($publication['auteurs'], $userName) !== false);
+
+        if (
+            !hasPermission('edit_publication') &&
+            !($isAuthor && hasPermission('edit_own_publication'))
+        ) {
+            BaseView::setFlash('Accès refusé. Permission requise: modifier cette publication', 'error');
             header('Location: ?page=admin&section=publications');
             exit;
         }
@@ -228,13 +333,13 @@ class AdminPublicationController
             'validee' => isset($_POST['validee']) ? 1 : 0
         ];
 
-        // Re-categorize if needed
+        // Re-catégoriser
         $detectedProject = $this->detectProject($data['titre'], $data['resume'] ?? '');
         if ($detectedProject) {
             $data['id_projet'] = $detectedProject;
         }
 
-        // Handle file upload
+        // Gérer l'upload du fichier
         if (isset($_FILES['fichier']) && $_FILES['fichier']['error'] === 0) {
             $uploadResult = $this->handleFileUpload($_FILES['fichier']);
             if ($uploadResult['success']) {
@@ -265,6 +370,13 @@ class AdminPublicationController
 
     public function validatePublication()
     {
+        // Seul l'admin peut valider
+        if ($_SESSION['user']['role'] !== 'admin') {
+            BaseView::setFlash('Accès refusé', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         $id = $_GET['id'] ?? null;
         if (!$id) {
             header('Location: ?page=admin&section=publications');
@@ -290,6 +402,25 @@ class AdminPublicationController
         }
 
         $publication = $this->model->getById($id);
+        if (!$publication) {
+            BaseView::setFlash('Publication introuvable', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
+        // Vérifier si l'utilisateur est auteur
+        $userName = $_SESSION['user']['nom'] . ' ' . $_SESSION['user']['prenom'];
+        $isAuthor = (strpos($publication['auteurs'], $userName) !== false);
+
+        if (
+            !hasPermission('delete_publication') &&
+            !($isAuthor && hasPermission('delete_own_publication'))
+        ) {
+            BaseView::setFlash('Accès refusé. Permission requise: supprimer cette publication', 'error');
+            header('Location: ?page=admin&section=publications');
+            exit;
+        }
+
         if (!empty($publication['fichier'])) {
             $file = UPLOADS_PATH . 'publications/' . $publication['fichier'];
             if (file_exists($file)) {
@@ -307,14 +438,10 @@ class AdminPublicationController
         exit;
     }
 
-    /**
-     * AUTO-CATEGORIZATION: Detect project based on title/abstract keywords
-     */
     private function detectProject($titre, $resume)
     {
         $text = strtolower($titre . ' ' . $resume);
 
-        // Get all projects with their keywords
         $projets = $this->model->query("
             SELECT id_projet, titre, description, objectifs 
             FROM projets 
@@ -329,26 +456,24 @@ class AdminPublicationController
             $score = 0;
             $projetText = strtolower($projet['titre'] . ' ' . ($projet['description'] ?? '') . ' ' . ($projet['objectifs'] ?? ''));
 
-            // Extract significant words (3+ characters)
             $projetWords = array_unique(array_filter(
                 preg_split('/\s+/', $projetText),
                 function ($word) {
-                    return strlen($word) >= 3; }
+                    return strlen($word) >= 3;
+                }
             ));
 
-            // Count matching words
             foreach ($projetWords as $word) {
                 if (strpos($text, $word) !== false) {
                     $score++;
                 }
             }
 
-            // Boost score if project title appears in publication title
             if (strpos($titre, strtolower($projet['titre'])) !== false) {
                 $score += 10;
             }
 
-            if ($score > $highestScore && $score >= 3) { // Minimum 3 matching words
+            if ($score > $highestScore && $score >= 3) {
                 $highestScore = $score;
                 $bestMatch = $projet['id_projet'];
             }
@@ -357,14 +482,10 @@ class AdminPublicationController
         return $bestMatch;
     }
 
-    /**
-     * Get enhanced statistics
-     */
     private function getEnhancedStatistics()
     {
         $stats = $this->model->getStatistics();
 
-        // Add author statistics (extract principal author)
         $sql = "SELECT 
                     SUBSTRING_INDEX(auteurs, ',', 1) as auteur_principal,
                     COUNT(*) as total
@@ -377,9 +498,6 @@ class AdminPublicationController
         return $stats;
     }
 
-    /**
-     * Get filtered publications for PDF
-     */
     private function getFilteredPublications($filters)
     {
         $sql = "SELECT p.*, t.nom_thematique as domaine_nom
@@ -418,9 +536,6 @@ class AdminPublicationController
         return $this->model->query($sql, $params);
     }
 
-    /**
-     * Generate publications PDF
-     */
     private function generatePublicationsPdf($publications, $title, $filters)
     {
         require_once(__DIR__ . '/../../libs/tcpdf/tcpdf.php');
@@ -434,14 +549,12 @@ class AdminPublicationController
         $pdf->SetAutoPageBreak(true, 15);
         $pdf->AddPage();
 
-        // Header
         $pdf->SetFont('helvetica', 'B', 18);
         $pdf->Cell(0, 10, $title, 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(0, 6, 'Généré le ' . date('d/m/Y à H:i'), 0, 1, 'C');
         $pdf->Ln(10);
 
-        // Summary
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 8, 'Résumé', 0, 1, 'L');
         $pdf->SetFillColor(240, 248, 255);
@@ -452,7 +565,6 @@ class AdminPublicationController
         $pdf->Cell(0, 6, 'Nombre total de publications: ' . count($publications), 0, 1, 'L');
         $pdf->Ln(15);
 
-        // Publications list
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 8, 'Liste des Publications', 0, 1, 'L');
         $pdf->Ln(2);

@@ -21,6 +21,7 @@ class AdminProjetView extends BaseView
 {
     public function __construct()
     {
+        parent::__construct();
         $this->pageTitle = 'Administration - Projets';
         $this->currentPage = 'admin';
     }
@@ -89,7 +90,7 @@ class AdminProjetView extends BaseView
                 <!-- Table -->
                 <?php
                 Table::render([
-                    'headers' => ['ID', 'Titre', 'Responsable', 'Thématique', 'Statut', 'Date début', 'Budget', 'Actions'],
+                    'headers' => ['ID', 'Titre', 'Responsable', 'Thématique', 'Statut', 'Date début', 'Actions'],
                     'rows' => $projets
                 ], function ($p) {
                     // ⭐ AJOUT: Vérifier si l'utilisateur est le responsable
@@ -116,7 +117,7 @@ class AdminProjetView extends BaseView
                             ]); ?>
                         </td>
                         <td><?= date('d/m/Y', strtotime($p['date_debut'])) ?></td>
-                        <td><?= $p['budget'] ? number_format($p['budget'], 0, ',', ' ') . ' DZD' : 'N/A' ?></td>
+                       
                         <td>
                             <?php 
                             // ⭐ CHANGÉ: Actions conditionnelles basées sur permissions
@@ -524,17 +525,6 @@ class AdminProjetView extends BaseView
                                 ]);
                             });
 
-                            // Budget
-                            FormGroup::render([
-                                'label' => 'Budget (DZD)'
-                            ], function () use ($isEdit, $projet) {
-                                FormInput::render([
-                                    'type' => 'number',
-                                    'name' => 'budget',
-                                    'value' => $isEdit ? ($projet['budget'] ?? '') : '',
-                                    'attributes' => ['step' => '0.01', 'min' => '0']
-                                ]);
-                            });
                             ?>
                         </div>
 

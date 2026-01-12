@@ -13,6 +13,7 @@ class PublicationView extends BaseView
 {
     public function __construct()
     {
+        parent::__construct();
         $this->currentPage = 'publications';
         $this->pageTitle = 'Publications';
     }
@@ -95,7 +96,7 @@ class PublicationView extends BaseView
                 ?>
 
                 <!-- Publications List -->
-                <div id="publications-container">
+                <div id="publications-container" style="margin-top: <?= SPACING_XL ?>;">
                     <?php $this->renderPublicationsList($publications); ?>
                 </div>
 
@@ -124,7 +125,7 @@ class PublicationView extends BaseView
             return;
         }
 
-        ListContainer::render(['gap' => '1.5rem'], function () use ($publications) {
+        ListContainer::render(['gap' => SPACING_LG], function () use ($publications) {
             foreach ($publications as $pub) {
                 $this->renderPublicationCard($pub);
             }
@@ -132,7 +133,7 @@ class PublicationView extends BaseView
     }
 
     /**
-     * Render single publication card - FIXED VERSION
+     * Render single publication card - FIXED WITH CONSTANTS & SPACING
      */
     private function renderPublicationCard($pub)
     {
@@ -141,20 +142,34 @@ class PublicationView extends BaseView
         if (!empty($pub['date_publication'])) {
             $datePublication = date('d/m/Y', strtotime($pub['date_publication']));
         } elseif (!empty($pub['annee'])) {
-            // If only year is available, show just the year
             $datePublication = $pub['annee'];
         }
-
         ?>
-        <div class="card" style="flex-direction: row; align-items: stretch;">
+        <div class="card" 
+             style="display: flex; 
+                    flex-direction: row; 
+                    align-items: stretch; 
+                    background: <?= BG_WHITE ?>; 
+                    border-radius: <?= RADIUS_LG ?>; 
+                    box-shadow: <?= SHADOW_MD ?>; 
+                    overflow: hidden;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;">
+            
             <!-- Left Side: Badges -->
-            <div
-                style="padding: 1.5rem; background: var(--gray-50, #f9fafb); border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; min-width: 120px;">
+            <div style="padding: <?= SPACING_LG ?>; 
+                        background: <?= BG_GRAY_LIGHT ?>; 
+                        border-right: 1px solid <?= BORDER_GRAY ?>; 
+                        display: flex; 
+                        flex-direction: column; 
+                        align-items: center; 
+                        justify-content: center; 
+                        gap: <?= SPACING_MD ?>; 
+                        min-width: 140px;">
                 <?php
                 Badge::render([
                     'text' => strtoupper($pub['type']),
                     'variant' => $this->getTypeVariant($pub['type']),
-                    'size' => 'small'
+                    'size' => 'medium'
                 ]);
 
                 Badge::render([
@@ -167,55 +182,114 @@ class PublicationView extends BaseView
             </div>
 
             <!-- Right Side: Content -->
-            <div class="card-content" style="flex: 1;">
-                <h3 class="card-title" style="font-size: 1.35rem; margin-bottom: 0.75rem;">
+            <div style="flex: 1; 
+                        padding: <?= SPACING_LG ?>; 
+                        display: flex; 
+                        flex-direction: column; 
+                        gap: <?= SPACING_MD ?>;">
+                
+                <!-- Title -->
+                <h3 style="margin: 0; 
+                           font-size: 1.35rem; 
+                           font-weight: 600; 
+                           line-height: 1.4; 
+                           color: <?= TEXT_DARK ?>;">
                     <?= htmlspecialchars($pub['titre']) ?>
                 </h3>
 
-                <p
-                    style="color: var(--gray-600); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
-                    <i class="fas fa-user"></i>
+                <!-- Authors -->
+                <p style="margin: 0; 
+                          color: <?= TEXT_GRAY ?>; 
+                          display: flex; 
+                          align-items: center; 
+                          gap: <?= SPACING_SM ?>; 
+                          font-size: 0.95rem;">
+                    <i class="fas fa-user" style="color: <?= PRIMARY_COLOR ?>;"></i>
                     <?= htmlspecialchars($pub['auteurs']) ?>
                 </p>
 
+                <!-- Resume -->
                 <?php if (!empty($pub['resume'])): ?>
-                    <p class="card-description" style="margin-bottom: 1rem;">
+                    <p style="margin: 0; 
+                              color: <?= TEXT_GRAY ?>; 
+                              line-height: 1.6; 
+                              font-size: 0.95rem;">
                         <?= htmlspecialchars(mb_substr($pub['resume'], 0, 200)) ?>...
                     </p>
                 <?php endif; ?>
 
-                <!-- Meta Information -->
-                <div class="card-footer"
-                    style="border-top: none; padding-top: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                <!-- Meta Information & Actions -->
+                <div style="display: flex; 
+                            align-items: center; 
+                            justify-content: space-between; 
+                            flex-wrap: wrap; 
+                            gap: <?= SPACING_MD ?>; 
+                            padding-top: <?= SPACING_MD ?>; 
+                            border-top: 1px solid <?= BORDER_GRAY ?>; 
+                            margin-top: auto;">
+                    
+                    <!-- Left: Meta Info -->
+                    <div style="display: flex; 
+                                align-items: center; 
+                                gap: <?= SPACING_LG ?>; 
+                                flex-wrap: wrap;">
                         <?php if (!empty($pub['doi'])): ?>
-                            <span class="card-footer-item">
-                                <i class="fas fa-link"></i>
-                                DOI:
-                                <?= htmlspecialchars($pub['doi']) ?>
+                            <span style="display: flex; 
+                                         align-items: center; 
+                                         gap: <?= SPACING_SM ?>; 
+                                         color: <?= TEXT_GRAY ?>; 
+                                         font-size: 0.875rem;">
+                                <i class="fas fa-link" style="color: <?= PRIMARY_COLOR ?>;"></i>
+                                <span style="font-family: monospace;">
+                                    DOI: <?= htmlspecialchars($pub['doi']) ?>
+                                </span>
                             </span>
                         <?php endif; ?>
 
                         <?php if (!empty($pub['domaine_nom'])): ?>
-                            <span class="card-footer-item">
-                                <i class="fas fa-layer-group"></i>
+                            <span style="display: flex; 
+                                         align-items: center; 
+                                         gap: <?= SPACING_SM ?>; 
+                                         color: <?= TEXT_GRAY ?>; 
+                                         font-size: 0.875rem;">
+                                <i class="fas fa-layer-group" style="color: <?= PRIMARY_COLOR ?>;"></i>
                                 <?= htmlspecialchars($pub['domaine_nom']) ?>
                             </span>
                         <?php endif; ?>
                     </div>
 
-                    <!-- Download Link - ALWAYS SHOW -->
-                    <div style="display: flex; gap: 0.75rem; margin-left: auto;">
+                    <!-- Right: Download Button -->
+                    <div style="margin-left: auto;">
                         <?php if (!empty($pub['fichier'])): ?>
-                            <a href="<?= UPLOADS_URL . 'publications/' . $pub['fichier'] ?>" class="btn btn-primary btn-sm"
-                                target="_blank" download
-                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: all 0.3s ease;">
+                            <a href="<?= UPLOADS_URL . 'publications/' . $pub['fichier'] ?>" 
+                               target="_blank" 
+                               download
+                               style="display: inline-flex; 
+                                      align-items: center; 
+                                      gap: <?= SPACING_SM ?>; 
+                                      padding: <?= SPACING_SM ?> <?= SPACING_MD ?>; 
+                                      background: <?= PRIMARY_COLOR ?>; 
+                                      color: <?= TEXT_WHITE ?>; 
+                                      text-decoration: none; 
+                                      border-radius: <?= RADIUS_SM ?>; 
+                                      font-size: 0.9rem; 
+                                      font-weight: 600;
+                                      transition: all 0.2s ease;
+                                      white-space: nowrap;">
                                 <i class="fas fa-download"></i>
                                 Télécharger
                             </a>
                         <?php else: ?>
-                            <span
-                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--gray-300); color: var(--gray-600); border-radius: 6px; font-size: 0.9rem; cursor: not-allowed;">
+                            <span style="display: inline-flex; 
+                                         align-items: center; 
+                                         gap: <?= SPACING_SM ?>; 
+                                         padding: <?= SPACING_SM ?> <?= SPACING_MD ?>; 
+                                         background: <?= BG_GRAY ?>; 
+                                         color: <?= TEXT_GRAY ?>; 
+                                         border-radius: <?= RADIUS_SM ?>; 
+                                         font-size: 0.9rem; 
+                                         cursor: not-allowed;
+                                         white-space: nowrap;">
                                 <i class="fas fa-ban"></i>
                                 Non disponible
                             </span>
@@ -228,22 +302,17 @@ class PublicationView extends BaseView
     }
 
     /**
-     * Get badge variant based on publication type
+     * Get badge variant based on publication type - USES CONSTANTS
      */
     private function getTypeVariant($type)
     {
         $type = strtolower($type);
 
-        if (strpos($type, 'article') !== false)
-            return 'primary';
-        if (strpos($type, 'conf') !== false || strpos($type, 'communication') !== false)
-            return 'success';
-        if (strpos($type, 'rapport') !== false)
-            return 'info';
-        if (strpos($type, 'thèse') !== false || strpos($type, 'these') !== false)
-            return 'warning';
-        if (strpos($type, 'poster') !== false)
-            return 'danger';
+        if (strpos($type, 'article') !== false) return 'primary';
+        if (strpos($type, 'conf') !== false || strpos($type, 'communication') !== false) return 'success';
+        if (strpos($type, 'rapport') !== false) return 'info';
+        if (strpos($type, 'thèse') !== false || strpos($type, 'these') !== false) return 'warning';
+        if (strpos($type, 'poster') !== false) return 'pink';
 
         return 'default';
     }

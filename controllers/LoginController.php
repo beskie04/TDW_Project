@@ -37,23 +37,23 @@ class LoginController
             exit;
         }
 
-        $email = $_POST['email'] ?? '';
+        $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
         $remember = isset($_POST['remember']);
 
         // Validation
-        $errors = $this->validateLogin($email, $password);
+        $errors = $this->validateLogin($username, $password);
 
         if (!empty($errors)) {
-            $this->view->render($errors, $email);
+            $this->view->render($errors, $username);
             return;
         }
 
         // Authentification
-        $user = $this->model->authenticate($email, $password);
+        $user = $this->model->authenticate($username, $password);
 
         if (!$user) {
-            $this->view->render(['general' => 'Email ou mot de passe incorrect'], $email);
+            $this->view->render(['general' => 'Nom d\'utilisateur ou mot de passe incorrect'], $username);
             return;
         }
 
@@ -85,14 +85,14 @@ class LoginController
     /**
      * Valider les données de connexion
      */
-    private function validateLogin($email, $password)
+    private function validateLogin($username, $password)
     {
         $errors = [];
 
-        if (empty($email)) {
-            $errors['email'] = 'L\'email est requis';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Format d\'email invalide';
+        if (empty($username)) {
+            $errors['username'] = 'Le nom d\'utilisateur est requis';
+        } elseif (strlen($username) < 3) {
+            $errors['username'] = 'Le nom d\'utilisateur doit contenir au moins 3 caractères';
         }
 
         if (empty($password)) {
@@ -114,6 +114,7 @@ class LoginController
         $_SESSION['user'] = [
             'id' => $user['id_membre'],
             'id_membre' => $user['id_membre'],
+            'username' => $user['username'],
             'nom' => $user['nom'],
             'prenom' => $user['prenom'],
             'email' => $user['email'],
@@ -123,8 +124,10 @@ class LoginController
             'poste' => $user['poste'],
             'role_systeme' => $user['role_systeme'] ?? $user['role']
         ];
+        
         // Debug: Verify the session
         error_log("Session created for user: " . print_r($_SESSION['user'], true));
+        
         // Cookie "Remember Me"
         if ($remember) {
             $token = bin2hex(random_bytes(32));

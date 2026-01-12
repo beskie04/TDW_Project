@@ -16,6 +16,7 @@ class AdminEquipementView extends BaseView
 {
     public function __construct()
     {
+         parent::__construct();
         $this->pageTitle = 'Administration - Équipements';
         $this->currentPage = 'admin';
     }

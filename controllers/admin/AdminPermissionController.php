@@ -166,18 +166,18 @@ class AdminPermissionController
     }
 
     /**
-     * Gestion des permissions par utilisateur
+     * Gestion des permissions par utilisateur - VERSION SIMPLIFIÉE
      */
     public function userPermissions()
     {
-        // Récupérer tous les membres
-        $sql = "SELECT * FROM membres WHERE actif = 1 ORDER BY nom, prenom";
+        // Récupérer tous les membres (sauf admin)
+        $sql = "SELECT * FROM membres WHERE actif = 1 AND role_systeme != 'admin' ORDER BY nom, prenom";
         $membres = $this->model->query($sql);
 
         $selectedMembre = null;
         $userPermissions = [];
         $rolePermissions = [];
-        $allPermissions = [];
+        $availableOwnPermissions = [];
 
         if (isset($_GET['membre_id'])) {
             $membreId = $_GET['membre_id'];
@@ -188,8 +188,11 @@ class AdminPermissionController
             $selectedMembre = !empty($result) ? $result[0] : null;
 
             if ($selectedMembre) {
-                // Récupérer ses permissions custom
-                $userPermissions = $this->model->getUserPermissions($membreId);
+                // Récupérer ses permissions custom (granted only)
+                $sql = "SELECT p.* FROM permissions p
+                        INNER JOIN user_permissions up ON p.id_permission = up.id_permission
+                        WHERE up.id_membre = :membre AND up.granted = 1";
+                $userPermissions = $this->model->query($sql, ['membre' => $membreId]);
 
                 // Récupérer les permissions de son rôle
                 $sql = "SELECT id_role FROM roles WHERE nom = :nom";
@@ -199,16 +202,24 @@ class AdminPermissionController
                     $rolePermissions = $this->model->getRolePermissions($roleResult[0]['id_role'], true);
                 }
 
-                // Toutes les permissions groupées par module
-                $allPermissions = $this->model->getAllPermissionsGrouped();
+                // ⭐ NOUVEAU: Récupérer UNIQUEMENT les permissions "own" qui NE SONT PAS dans le rôle
+                $rolePermissionIds = array_column($rolePermissions, 'id_permission');
+                $placeholders = !empty($rolePermissionIds) ? implode(',', array_fill(0, count($rolePermissionIds), '?')) : '0';
+                
+                $sql = "SELECT * FROM permissions 
+                        WHERE is_own = 1 
+                        AND id_permission NOT IN ($placeholders)
+                        ORDER BY module, action";
+                
+                $availableOwnPermissions = $this->model->query($sql, $rolePermissionIds);
             }
         }
 
-        $this->view->renderUserPermissions($membres, $selectedMembre, $userPermissions, $rolePermissions, $allPermissions);
+        $this->view->renderUserPermissions($membres, $selectedMembre, $userPermissions, $rolePermissions, $availableOwnPermissions);
     }
 
     /**
-     * Sauvegarder les permissions d'un utilisateur
+     * Sauvegarder les permissions d'un utilisateur - VERSION SIMPLIFIÉE
      */
     public function saveUserPermissions()
     {
@@ -218,9 +229,8 @@ class AdminPermissionController
         }
 
         $membreId = $_POST['membre_id'] ?? null;
-        $grantedPermissions = $_POST['granted_permissions'] ?? [];
-        $revokedPermissions = $_POST['revoked_permissions'] ?? [];
-        $note = $_POST['note'] ?? '';
+        $grantedPermissions = $_POST['permissions'] ?? [];
+        $note = $_POST['note'] ?? 'Permissions additionnelles accordées';
 
         if (!$membreId) {
             BaseView::setFlash('Données invalides', 'error');
@@ -230,14 +240,19 @@ class AdminPermissionController
 
         $adminId = $_SESSION['user']['id_membre'];
 
-        // Ajouter les permissions accordées
-        foreach ($grantedPermissions as $permId) {
-            $this->model->grantPermissionToUser($membreId, $permId, $adminId, $note);
-        }
+        // ⭐ NOUVEAU: Supprimer TOUTES les permissions custom actuelles
+        $sql = "DELETE FROM user_permissions WHERE id_membre = :membre";
+        $this->model->execute($sql, ['membre' => $membreId]);
 
-        // Retirer les permissions révoquées
-        foreach ($revokedPermissions as $permId) {
-            $this->model->revokePermissionFromUser($membreId, $permId, $adminId, $note);
+        // ⭐ NOUVEAU: Ajouter uniquement les permissions cochées
+        foreach ($grantedPermissions as $permId) {
+            // Vérifier que c'est bien une permission "own"
+            $sql = "SELECT is_own FROM permissions WHERE id_permission = :id";
+            $result = $this->model->query($sql, ['id' => $permId]);
+            
+            if (!empty($result) && $result[0]['is_own'] == 1) {
+                $this->model->grantPermissionToUser($membreId, $permId, $adminId, $note);
+            }
         }
 
         // Clear cache
@@ -277,15 +292,6 @@ class AdminPermissionController
 
         header('Location: ?page=admin&section=permissions&action=userPermissions&membre_id=' . $membreId);
         exit;
-    }
-
-    /**
-     * Voir les logs de permissions
-     */
-    public function logs()
-    {
-        $logs = $this->model->getPermissionLogs(100);
-        $this->view->renderLogs($logs);
     }
 }
 ?>

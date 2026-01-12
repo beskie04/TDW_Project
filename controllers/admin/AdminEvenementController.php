@@ -1,15 +1,18 @@
 <?php
 require_once __DIR__ . '/../../models/EvenementModel.php';
+require_once __DIR__ . '/../../models/NotificationModel.php';
 require_once __DIR__ . '/../../views/admin/AdminEvenementView.php';
 
 class AdminEvenementController
 {
     private $model;
+    private $notificationModel;
     private $view;
 
     public function __construct()
     {
         $this->model = new EvenementModel();
+        $this->notificationModel = new NotificationModel();
         $this->view = new AdminEvenementView();
     }
 
@@ -83,6 +86,18 @@ class AdminEvenementController
         if ($result) {
             $_SESSION['flash_message'] = 'Événement créé avec succès';
             $_SESSION['flash_type'] = 'success';
+
+            // Send notification to organizer if specified
+            if ($data['organisateur_id'] && $data['organisateur_id'] != $_SESSION['user']['id_membre']) {
+                $this->notificationModel->create([
+                    'id_membre' => $data['organisateur_id'],
+                    'type' => 'systeme',
+                    'titre' => 'Vous êtes organisateur d\'un événement',
+                    'message' => "Vous avez été désigné comme organisateur de l'événement \"{$data['titre']}\".",
+                    'lien' => "?page=evenements&action=details&id={$result}",
+                    'id_evenement' => $result
+                ]);
+            }
         } else {
             $_SESSION['flash_message'] = 'Erreur lors de la création';
             $_SESSION['flash_type'] = 'error';
@@ -134,6 +149,9 @@ class AdminEvenementController
             exit;
         }
 
+        // Get old event data
+        $oldEvent = $this->model->getById($id);
+        
         $data = [
             'titre' => $_POST['titre'] ?? '',
             'description' => $_POST['description'] ?? '',
@@ -162,7 +180,6 @@ class AdminEvenementController
 
             if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
                 // Delete old image
-                $oldEvent = $this->model->getById($id);
                 if ($oldEvent && $oldEvent['image']) {
                     $oldPath = $uploadDir . $oldEvent['image'];
                     if (file_exists($oldPath)) {
@@ -178,6 +195,39 @@ class AdminEvenementController
         if ($result) {
             $_SESSION['flash_message'] = 'Événement modifié avec succès';
             $_SESSION['flash_type'] = 'success';
+
+            // Check if important details changed and notify participants
+            $hasImportantChanges = false;
+            $changeMessage = "L'événement \"{$data['titre']}\" a été modifié. ";
+            $changes = [];
+
+            if ($oldEvent['date_debut'] != $data['date_debut']) {
+                $hasImportantChanges = true;
+                $changes[] = "Nouvelle date: " . date('d/m/Y à H:i', strtotime($data['date_debut']));
+            }
+
+            if ($oldEvent['lieu'] != $data['lieu']) {
+                $hasImportantChanges = true;
+                $changes[] = "Nouveau lieu: {$data['lieu']}";
+            }
+
+            if ($data['statut'] == 'annulé' && $oldEvent['statut'] != 'annulé') {
+                $hasImportantChanges = true;
+                $this->notificationModel->notifyEventParticipants(
+                    $id,
+                    "Événement annulé : {$data['titre']}",
+                    "L'événement \"{$data['titre']}\" a été annulé. Nous nous excusons pour la gêne occasionnée.",
+                    'evenement_annulation'
+                );
+            } elseif ($hasImportantChanges) {
+                $changeMessage .= implode('. ', $changes);
+                $this->notificationModel->notifyEventParticipants(
+                    $id,
+                    "Modification : {$data['titre']}",
+                    $changeMessage,
+                    'evenement_modification'
+                );
+            }
         } else {
             $_SESSION['flash_message'] = 'Erreur lors de la modification';
             $_SESSION['flash_type'] = 'error';
@@ -198,12 +248,24 @@ class AdminEvenementController
             exit;
         }
 
-        // Delete image file
+        // Get event data for notification
         $evenement = $this->model->getById($id);
-        if ($evenement && $evenement['image']) {
-            $imagePath = __DIR__ . '/../../uploads/evenements/' . $evenement['image'];
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
+
+        // Notify participants before deletion
+        if ($evenement) {
+            $this->notificationModel->notifyEventParticipants(
+                $id,
+                "Événement supprimé : {$evenement['titre']}",
+                "L'événement \"{$evenement['titre']}\" a été supprimé.",
+                'evenement_annulation'
+            );
+
+            // Delete image file
+            if ($evenement['image']) {
+                $imagePath = __DIR__ . '/../../uploads/evenements/' . $evenement['image'];
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
             }
         }
 

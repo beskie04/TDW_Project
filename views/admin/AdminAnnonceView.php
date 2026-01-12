@@ -8,6 +8,7 @@ class AdminAnnonceView extends BaseView
      */
     public function renderIndex($annonces)
     {
+         parent::__construct();
         $this->pageTitle = 'Gestion des Annonces';
         $this->renderHeader();
         $this->renderFlashMessage();

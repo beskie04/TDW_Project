@@ -6,8 +6,8 @@ class Database
 
     private $host = 'localhost';
     private $db_name = 'TDW';
-    private $username = 'admin';
-    private $password = 'admin';
+    private $username = 'root';
+    private $password = '';
 
     private function __construct()
     {

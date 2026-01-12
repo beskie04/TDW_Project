@@ -12,7 +12,7 @@ class LoginView extends BaseView
     /**
      * Rendre la page de connexion
      */
-    public function render($errors = [], $email = '')
+    public function render($errors = [], $username = '')
     {
         $this->renderHeader();
         ?>
@@ -45,14 +45,14 @@ class LoginView extends BaseView
                     <form method="POST" action="?page=login&action=login" class="login-form">
                         <?php
                         FormInput::render([
-                            'label' => 'Adresse email',
-                            'name' => 'email',
-                            'type' => 'email',
-                            'value' => $email,
-                            'placeholder' => 'votre.email@example.com',
-                            'icon' => 'fa-envelope',
+                            'label' => 'Nom d\'utilisateur',
+                            'name' => 'username',
+                            'type' => 'text',
+                            'value' => $username,
+                            'placeholder' => 'admin',
+                            'icon' => 'fa-user',
                             'required' => true,
-                            'error' => $errors['email'] ?? null
+                            'error' => $errors['username'] ?? null
                         ]);
 
                         FormInput::render([
@@ -95,47 +95,32 @@ class LoginView extends BaseView
                         <p>Connectez-vous pour accéder à votre espace personnel et gérer vos projets, publications et
                             réservations.</p>
 
-                        <div class="info-features">
-                            <div class="feature-item">
-                                <i class="fas fa-project-diagram"></i>
-                                <h3>Gestion des projets</h3>
-                                <p>Suivez vos projets de recherche</p>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-file-alt"></i>
-                                <h3>Publications</h3>
-                                <p>Gérez vos publications scientifiques</p>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-desktop"></i>
-                                <h3>Réservations</h3>
-                                <p>Réservez les équipements du laboratoire</p>
-                            </div>
-                        </div>
+                     
                     </div>
                 </div>
             </div>
         </div>
 
-        <style>
+    <style>
             .login-container {
                 min-height: 100vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #f7fafc;
                 padding: 2rem;
             }
 
             .login-wrapper {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                max-width: 1000px;
+                max-width: 900px;
                 width: 100%;
                 background: white;
-                border-radius: 20px;
+                border-radius: 12px;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+                border: 1px solid #e2e8f0;
             }
 
             .login-card {
@@ -148,29 +133,31 @@ class LoginView extends BaseView
             }
 
             .login-icon {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 50%;
+                width: 64px;
+                height: 64px;
+                background: #4169E1;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 1rem;
+                margin: 0 auto 1.5rem;
             }
 
             .login-icon i {
-                font-size: 2rem;
+                font-size: 1.75rem;
                 color: white;
             }
 
             .login-header h1 {
-                font-size: 2rem;
-                color: #2d3748;
+                font-size: 1.75rem;
+                color: #1a202c;
                 margin-bottom: 0.5rem;
+                font-weight: 600;
             }
 
             .login-header p {
                 color: #718096;
+                font-size: 0.95rem;
             }
 
             .login-form {
@@ -190,27 +177,29 @@ class LoginView extends BaseView
                 gap: 0.5rem;
                 cursor: pointer;
                 color: #4a5568;
+                font-size: 0.9rem;
             }
 
             .checkbox-label input[type="checkbox"] {
-                width: 18px;
-                height: 18px;
+                width: 16px;
+                height: 16px;
                 cursor: pointer;
             }
 
             .login-footer {
                 text-align: center;
-                margin-top: 2rem;
-                padding-top: 2rem;
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
                 border-top: 1px solid #e2e8f0;
             }
 
             .login-footer a {
-                color: #667eea;
+                color: #4169E1;
                 text-decoration: none;
                 display: inline-flex;
                 align-items: center;
                 gap: 0.5rem;
+                font-size: 0.9rem;
             }
 
             .login-footer a:hover {
@@ -218,51 +207,28 @@ class LoginView extends BaseView
             }
 
             .login-info {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #4169E1;
                 padding: 3rem;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 color: white;
             }
 
+            .info-content {
+                text-align: center;
+            }
+
             .info-content h2 {
-                font-size: 2rem;
+                font-size: 1.75rem;
                 margin-bottom: 1rem;
+                font-weight: 600;
             }
 
             .info-content p {
-                opacity: 0.9;
-                line-height: 1.6;
-                margin-bottom: 2rem;
-            }
-
-            .info-features {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-            }
-
-            .feature-item {
-                display: flex;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-
-            .feature-item i {
-                font-size: 1.5rem;
-                opacity: 0.9;
-                margin-top: 0.25rem;
-            }
-
-            .feature-item h3 {
-                font-size: 1.1rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .feature-item p {
-                opacity: 0.8;
-                font-size: 0.9rem;
-                margin: 0;
+                opacity: 0.95;
+                line-height: 1.7;
+                font-size: 1rem;
             }
 
             @media (max-width: 768px) {
@@ -279,7 +245,6 @@ class LoginView extends BaseView
                 }
             }
         </style>
-
         <?php
         $this->renderFooter();
     }

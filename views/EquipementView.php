@@ -23,6 +23,7 @@ class EquipementView extends BaseView
 {
     public function __construct()
     {
+         parent::__construct();
         $this->currentPage = 'equipements';
         $this->pageTitle = 'Équipements et Ressources';
     }
@@ -152,7 +153,7 @@ class EquipementView extends BaseView
                 ?>
 
                 <!-- Equipment Grid -->
-                <div id="equipements-container">
+                <div id="equipements-container" style="margin-top: 2rem;">
                     <?php $this->renderEquipementsList($equipements, $isLoggedIn, $mesEquipementsReserves); ?>
                 </div>
                 <!-- Loading State -->
@@ -436,118 +437,125 @@ class EquipementView extends BaseView
     }
 
     private function renderEquipementCard($eq, $isLoggedIn, $mesEquipementsReserves = [])
-    {
-        $etatVariant = $this->getEtatVariant($eq['etat']);
-        $etatLabel = ETATS_EQUIPEMENTS[$eq['etat']] ?? $eq['etat'];
-        $typeLabel = TYPES_EQUIPEMENTS[$eq['type']] ?? $eq['type'];
+{
+    $etatVariant = $this->getEtatVariant($eq['etat']);
+    $etatLabel = ETATS_EQUIPEMENTS[$eq['etat']] ?? $eq['etat'];
+    $typeLabel = TYPES_EQUIPEMENTS[$eq['type']] ?? $eq['type'];
 
-        // ✅ Vérifier si l'utilisateur a déjà réservé cet équipement
-        $userHasReservation = in_array($eq['id'], $mesEquipementsReserves);
-        ?>
-        <div class="card">
-            <!-- Header with badges -->
-            <div
-                style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--gray-200);">
-                <?php
-                Badge::render([
-                    'text' => $typeLabel,
-                    'variant' => 'primary',
-                    'size' => 'small'
-                ]);
+    // Check if user already has a reservation for this equipment
+    $userHasReservation = in_array($eq['id'], $mesEquipementsReserves);
+    ?>
+    <div class="card">
+        <!-- Header with badges -->
+        <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--gray-200);">
+            <?php
+            Badge::render([
+                'text' => $typeLabel,
+                'variant' => 'primary',
+                'size' => 'small'
+            ]);
 
-                Badge::render([
-                    'text' => $etatLabel,
-                    'variant' => $etatVariant,
-                    'size' => 'small'
-                ]);
-                ?>
-            </div>
+            Badge::render([
+                'text' => $etatLabel,
+                'variant' => $etatVariant,
+                'size' => 'small'
+            ]);
+            ?>
+        </div>
 
-            <!-- Content -->
-            <div class="card-content">
-                <h3 class="card-title"><?= htmlspecialchars($eq['nom']) ?></h3>
+        <!-- Content -->
+        <div class="card-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Title -->
+            <h3 class="card-title" style="margin: 0; font-size: 1.25rem; color: var(--dark-color);">
+                <?= htmlspecialchars($eq['nom']) ?>
+            </h3>
 
-                <p class="card-description">
-                    <?= htmlspecialchars($eq['description'] ?? '') ?>
-                </p>
+            <!-- Description -->
+            <p class="card-description" style="margin: 0; color: var(--gray-600); line-height: 1.6; font-size: 0.95rem;">
+                <?= htmlspecialchars($eq['description'] ?? '') ?>
+            </p>
 
-                <?php if (!empty($eq['specifications'])): ?>
-                    <p
-                        style="color: var(--gray-600); font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1rem;">
-                        <i class="fas fa-info-circle" style="margin-top: 0.25rem;"></i>
+            <!-- Specifications -->
+            <?php if (!empty($eq['specifications'])): ?>
+                <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; background: var(--gray-50, #f9fafb); border-radius: 6px; border-left: 3px solid var(--primary-color);">
+                    <i class="fas fa-info-circle" style="color: var(--primary-color); margin-top: 0.2rem; font-size: 1rem;"></i>
+                    <p style="margin: 0; color: var(--gray-700); font-size: 0.9rem; line-height: 1.5;">
                         <?= htmlspecialchars($eq['specifications']) ?>
                     </p>
-                <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
-                <!-- Actions -->
-                <div
-                    style="display: flex; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
-                    <?php if ($isLoggedIn): ?>
-                        <?php if ($userHasReservation): ?>
-                            <!-- ✅ L'utilisateur a déjà réservé -->
-                            <?php
-                            Badge::render([
-                                'text' => 'Vous avez réservé',
-                                'variant' => 'success',
-                                'size' => 'small'
-                            ]);
-                            ?>
-                        <?php elseif ($eq['etat'] === 'libre'): ?>
-                            <!-- ✅ Équipement libre -->
-                            <?php
-                            Button::render([
-                                'text' => 'Réserver',
-                                'icon' => 'fas fa-calendar-plus',
-                                'variant' => 'primary',
-                                'size' => 'small',
-                                'href' => '?page=equipements&action=reserver&id=' . $eq['id']
-                            ]);
-                            ?>
-                        <?php elseif ($eq['etat'] === 'reserve'): ?>
-                            <!-- ✅ Équipement réservé par quelqu'un d'autre -->
-                            <?php
-                            Button::render([
-                                'text' => 'Demander quand même',
-                                'icon' => 'fas fa-star',
-                                'variant' => 'warning',
-                                'size' => 'small',
-                                'href' => '?page=equipements&action=reserver&id=' . $eq['id']
-                            ]);
-                            ?>
-                        <?php else: ?>
-                            <!-- ✅ En maintenance ou autre -->
-                            <?php
-                            Button::render([
-                                'text' => 'Non disponible',
-                                'icon' => 'fas fa-ban',
-                                'variant' => 'secondary',
-                                'size' => 'small',
-                                'disabled' => true
-                            ]);
-                            ?>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <!-- ✅ Pas connecté -->
+            <!-- Actions -->
+            <div style="display: flex; gap: 1rem; align-items: center; padding-top: 1rem; margin-top: auto; border-top: 1px solid var(--gray-200);">
+                <?php if ($isLoggedIn): ?>
+                    <?php if ($userHasReservation): ?>
+                        <!-- User already has a reservation -->
+                        <?php
+                        Badge::render([
+                            'text' => 'Vous avez réservé',
+                            'variant' => 'success',
+                            'size' => 'small'
+                        ]);
+                        ?>
+                    <?php elseif ($eq['etat'] === 'libre'): ?>
+                        <!-- Equipment available -->
                         <?php
                         Button::render([
-                            'text' => 'Connectez-vous',
-                            'icon' => 'fas fa-sign-in-alt',
+                            'text' => 'Réserver',
+                            'icon' => 'fas fa-calendar-plus',
+                            'variant' => 'primary',
+                            'size' => 'small',
+                            'href' => '?page=equipements&action=reserver&id=' . $eq['id']
+                        ]);
+                        ?>
+                    <?php elseif ($eq['etat'] === 'reserve'): ?>
+                        <!-- Equipment reserved by someone else -->
+                        <?php
+                        Button::render([
+                            'text' => 'Demander quand même',
+                            'icon' => 'fas fa-star',
+                            'variant' => 'warning',
+                            'size' => 'small',
+                            'href' => '?page=equipements&action=reserver&id=' . $eq['id']
+                        ]);
+                        ?>
+                    <?php else: ?>
+                        <!-- In maintenance or other status -->
+                        <?php
+                        Button::render([
+                            'text' => 'Non disponible',
+                            'icon' => 'fas fa-ban',
                             'variant' => 'secondary',
                             'size' => 'small',
-                            'href' => '?page=login'
+                            'disabled' => true
                         ]);
                         ?>
                     <?php endif; ?>
+                <?php else: ?>
+                    <!-- Not logged in -->
+                    <?php
+                    Button::render([
+                        'text' => 'Connectez-vous',
+                        'icon' => 'fas fa-sign-in-alt',
+                        'variant' => 'secondary',
+                        'size' => 'small',
+                        'href' => '?page=login'
+                    ]);
+                    ?>
+                <?php endif; ?>
 
-                    <a href="?page=equipements&action=details&id=<?= $eq['id'] ?>" class="card-link" style="margin-left: auto;">
-                        Voir détails
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
+                <!-- View details link -->
+                <a href="?page=equipements&action=details&id=<?= $eq['id'] ?>" 
+                   class="card-link" 
+                   style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem; color: var(--primary-color); text-decoration: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap;">
+                    Voir détails
+                    <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
         </div>
-        <?php
-    }
+    </div>
+    <?php
+}
     /**
      * Render reservation form page
      */

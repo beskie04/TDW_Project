@@ -4059,3 +4059,89 @@ input:checked+.toggle-slider:before {
         padding: 0.4rem 1rem;
     }
 }
+/* Card improvements */
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-link:hover {
+    gap: 0.75rem !important; /* Arrow moves on hover */
+}
+
+/* Grid container */
+.grid-container {
+    width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .grid-container {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .card-content {
+        padding: 1.25rem !important;
+    }
+}
+/* Project card hover effects */
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card a:hover {
+    color: var(--accent-color);
+}
+
+.card .card-link:hover {
+    gap: 0.75rem !important;
+}
+
+/* Responsive grid for project details */
+@media (max-width: 1024px) {
+    .projet-details > div {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .projet-details h1 {
+        font-size: 2rem !important;
+    }
+}
+/* Publication card improvements */
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Download button hover */
+.card a[download]:hover {
+    background: var(--secondary-color) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Responsive publication cards */
+@media (max-width: 768px) {
+    .card {
+        flex-direction: column !important;
+    }
+    
+    .card > div:first-child {
+        min-width: auto !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--gray-200);
+        flex-direction: row !important;
+        justify-content: center !important;
+    }
+}

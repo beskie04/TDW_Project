@@ -10,7 +10,7 @@ require_once __DIR__ . '/components/FormInput.php';
 require_once __DIR__ . '/components/EmptyState.php';
 
 class ProfilView extends BaseView
-{
+{   
     protected $pageTitle = 'Mon Profil - Laboratoire Universitaire';
     protected $currentPage = 'profil';
 
@@ -30,28 +30,31 @@ class ProfilView extends BaseView
                 <div class="profile-header-content">
                     <div class="profile-avatar-section">
                         <?php
+                        $photoPath = null;
+                        if (!empty($profile['photo'])) {
+                            $photoPath = ASSETS_URL . 'uploads/photos/' . $profile['photo'];
+                        }
+                        
                         Avatar::render([
-                            'src' => $profile['photo'] ? ASSETS_URL . 'uploads/photos/' . $profile['photo'] : null,
+                            'src' => $photoPath,
                             'name' => $profile['prenom'] . ' ' . $profile['nom'],
                             'size' => 'xl'
                         ]);
                         ?>
                         <div class="profile-info">
-                            <h1>
-                                <?= htmlspecialchars($profile['prenom'] . ' ' . $profile['nom']) ?>
-                            </h1>
+                            <h1><?= htmlspecialchars($profile['prenom'] . ' ' . $profile['nom']) ?></h1>
                             <p class="profile-subtitle">
-                                <?= htmlspecialchars($profile['poste']) ?> •
-                                <?= htmlspecialchars($profile['grade']) ?>
+                                <?= htmlspecialchars($profile['poste'] ?? 'Membre') ?> • 
+                                <?= htmlspecialchars($profile['grade'] ?? 'N/A') ?>
                             </p>
                             <div class="profile-badges">
                                 <?php
                                 Badge::render([
-                                    'text' => $profile['role'],
+                                    'text' => $profile['role'] ?? 'membre',
                                     'variant' => 'secondary'
                                 ]);
 
-                                if ($profile['role_systeme'] === 'admin') {
+                                if (isset($profile['role_systeme']) && $profile['role_systeme'] === 'admin') {
                                     Badge::render([
                                         'text' => 'Administrateur',
                                         'variant' => 'danger'
@@ -76,39 +79,45 @@ class ProfilView extends BaseView
 
             <!-- Statistiques -->
             <div class="stats-grid">
-                <?php
-                StatCard::render([
-                    'title' => 'Projets',
-                    'value' => $profile['stats']['projets'],
-                    'icon' => 'fa-project-diagram',
-                    'color' => 'blue',
-                    'link' => '#projets-section'
-                ]);
+                <div class="stat-card stat-blue">
+                    <div class="stat-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><?= $profile['stats']['projets'] ?? 0 ?></h3>
+                        <p>Projets</p>
+                    </div>
+                </div>
 
-                StatCard::render([
-                    'title' => 'Publications',
-                    'value' => $profile['stats']['publications'],
-                    'icon' => 'fa-file-alt',
-                    'color' => 'green',
-                    'link' => '#publications-section'
-                ]);
+                <div class="stat-card stat-green">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><?= $profile['stats']['publications'] ?? 0 ?></h3>
+                        <p>Publications</p>
+                    </div>
+                </div>
 
-                StatCard::render([
-                    'title' => 'Réservations',
-                    'value' => $profile['stats']['reservations'],
-                    'icon' => 'fa-calendar-check',
-                    'color' => 'orange',
-                    'link' => '#reservations-section'
-                ]);
+                <div class="stat-card stat-orange">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><?= $profile['stats']['reservations'] ?? 0 ?></h3>
+                        <p>Réservations</p>
+                    </div>
+                </div>
 
-                StatCard::render([
-                    'title' => 'Équipes',
-                    'value' => $profile['stats']['equipes'],
-                    'icon' => 'fa-users',
-                    'color' => 'purple',
-                    'link' => '#equipes-section'
-                ]);
-                ?>
+                <div class="stat-card stat-purple">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><?= $profile['stats']['equipes'] ?? 0 ?></h3>
+                        <p>Équipes</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Onglets -->
@@ -151,6 +160,155 @@ class ProfilView extends BaseView
                 <?php $this->renderDocumentsSection(); ?>
             </div>
         </div>
+
+        <style>
+            .profile-header {
+                background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                border-radius: 12px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                color: white;
+            }
+
+            .profile-header-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1.5rem;
+            }
+
+            .profile-avatar-section {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+            }
+
+            .profile-info h1 {
+                font-size: 1.8rem;
+                margin-bottom: 0.5rem;
+                color: white;
+            }
+
+            .profile-subtitle {
+                color: rgba(255, 255, 255, 0.9);
+                margin-bottom: 0.75rem;
+            }
+
+            .profile-badges {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+            }
+
+            /* Stats Cards */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            .stat-card {
+                background: white;
+                border-radius: 12px;
+                padding: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .stat-icon {
+                width: 60px;
+                height: 60px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                color: white;
+            }
+
+            .stat-blue .stat-icon {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            }
+
+            .stat-green .stat-icon {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            }
+
+            .stat-orange .stat-icon {
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            }
+
+            .stat-purple .stat-icon {
+                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            }
+
+            .stat-content h3 {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #1f2937;
+                margin: 0;
+            }
+
+            .stat-content p {
+                color: #6b7280;
+                margin: 0;
+                font-size: 0.95rem;
+            }
+
+            /* Tabs */
+            .dashboard-tabs {
+                display: flex;
+                gap: 0.5rem;
+                margin-bottom: 2rem;
+                border-bottom: 2px solid #e5e7eb;
+                overflow-x: auto;
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                padding: 0.75rem 1.5rem;
+                background: none;
+                border: none;
+                color: #6b7280;
+                font-weight: 500;
+                cursor: pointer;
+                border-bottom: 3px solid transparent;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+
+            .tab-btn:hover {
+                color: #1e40af;
+                background: #f3f4f6;
+            }
+
+            .tab-btn.active {
+                color: #1e40af;
+                border-bottom-color: #1e40af;
+            }
+
+            .tab-btn i {
+                margin-right: 0.5rem;
+            }
+
+            .tab-content {
+                display: none;
+            }
+
+            .tab-content.active {
+                display: block;
+            }
+        </style>
 
         <script>
             // Gestion des onglets
@@ -208,15 +366,9 @@ class ProfilView extends BaseView
                     <?= htmlspecialchars(substr($projet['description'], 0, 150)) ?>...
                 </p>
                 <div class="projet-meta">
-                    <span><i class="fas fa-tag"></i>
-                        <?= htmlspecialchars($projet['nom_thematique']) ?>
-                    </span>
-                    <span><i class="fas fa-user"></i>
-                        <?= htmlspecialchars($projet['role_projet']) ?>
-                    </span>
-                    <span><i class="fas fa-calendar"></i>
-                        <?= date('Y', strtotime($projet['date_debut'])) ?>
-                    </span>
+                    <span><i class="fas fa-tag"></i> <?= htmlspecialchars($projet['nom_thematique']) ?></span>
+                    <span><i class="fas fa-user"></i> <?= htmlspecialchars($projet['role_projet']) ?></span>
+                    <span><i class="fas fa-calendar"></i> <?= date('Y', strtotime($projet['date_debut'])) ?></span>
                 </div>
             </div>
             <?php
@@ -238,7 +390,6 @@ class ProfilView extends BaseView
             return;
         }
 
-        // Map publication types to icons
         $typeIcons = [
             'article' => 'fa-file-alt',
             'communication' => 'fa-comments',
@@ -257,28 +408,16 @@ class ProfilView extends BaseView
                     <i class="fas <?= $icon ?>"></i>
                 </div>
                 <div class="publication-content">
-                    <h4>
-                        <?= htmlspecialchars($pub['titre']) ?>
-                    </h4>
+                    <h4><?= htmlspecialchars($pub['titre']) ?></h4>
                     <p class="publication-meta">
-                        <?= htmlspecialchars($pub['auteurs']) ?> •
-                        <?= $pub['annee'] ?> •
+                        <?= htmlspecialchars($pub['auteurs']) ?> • 
+                        <?= $pub['annee'] ?> • 
                         <?= htmlspecialchars($pub['type']) ?>
                     </p>
                     <?php if (!empty($pub['resume'])): ?>
                         <p class="publication-resume">
                             <?= htmlspecialchars(substr($pub['resume'], 0, 200)) ?>...
                         </p>
-                    <?php endif; ?>
-                    <?php if (!empty($pub['fichier'])): ?>
-                        <a href="<?= ASSETS_URL ?>uploads/publications/<?= htmlspecialchars($pub['fichier']) ?>" target="_blank"
-                            class="publication-link">
-                            <i class="fas fa-download"></i> Télécharger
-                        </a>
-                    <?php elseif (!empty($pub['doi'])): ?>
-                        <a href="https://doi.org/<?= htmlspecialchars($pub['doi']) ?>" target="_blank" class="publication-link">
-                            <i class="fas fa-external-link-alt"></i> DOI
-                        </a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -325,9 +464,7 @@ class ProfilView extends BaseView
             ?>
             <div class="reservation-card">
                 <div class="reservation-header">
-                    <h4>
-                        <?= htmlspecialchars($res['equipement_nom']) ?>
-                    </h4>
+                    <h4><?= htmlspecialchars($res['equipement_nom']) ?></h4>
                     <?php
                     Badge::render([
                         'text' => $statusText,
@@ -336,18 +473,9 @@ class ProfilView extends BaseView
                     ?>
                 </div>
                 <div class="reservation-details">
-                    <p><i class="fas fa-info-circle"></i>
-                        <?= htmlspecialchars($res['type']) ?>
-                    </p>
-                    <p><i class="fas fa-door-open"></i>
-                        <?= htmlspecialchars($res['salle']) ?>
-                    </p>
-                    <p><i class="fas fa-calendar"></i> Du
-                        <?= date('d/m/Y H:i', strtotime($res['date_debut'])) ?>
-                    </p>
-                    <p><i class="fas fa-calendar"></i> Au
-                        <?= date('d/m/Y H:i', strtotime($res['date_fin'])) ?>
-                    </p>
+                    <p><i class="fas fa-info-circle"></i> <?= htmlspecialchars($res['type']) ?></p>
+                    <p><i class="fas fa-calendar"></i> Du <?= date('d/m/Y H:i', strtotime($res['date_debut'])) ?></p>
+                    <p><i class="fas fa-calendar"></i> Au <?= date('d/m/Y H:i', strtotime($res['date_fin'])) ?></p>
                 </div>
             </div>
             <?php
@@ -373,14 +501,8 @@ class ProfilView extends BaseView
         foreach ($equipes as $equipe) {
             ?>
             <div class="equipe-card">
-                <h3>
-                    <h3>
-                        <?= htmlspecialchars($equipe['nom']) ?>
-                    </h3>
-                </h3>
-                <p>
-                    <?= htmlspecialchars(substr($equipe['description'], 0, 100)) ?>...
-                </p>
+                <h3><?= htmlspecialchars($equipe['nom']) ?></h3>
+                <p><?= htmlspecialchars(substr($equipe['description'], 0, 100)) ?>...</p>
                 <div class="equipe-meta">
                     <div class="equipe-chef">
                         <?php
@@ -390,13 +512,9 @@ class ProfilView extends BaseView
                             'size' => 'sm'
                         ]);
                         ?>
-                        <span>Chef:
-                            <?= htmlspecialchars($equipe['chef_prenom'] . ' ' . $equipe['chef_nom']) ?>
-                        </span>
+                        <span>Chef: <?= htmlspecialchars($equipe['chef_prenom'] . ' ' . $equipe['chef_nom']) ?></span>
                     </div>
-                    <span><i class="fas fa-users"></i>
-                        <?= $equipe['nb_membres'] ?> membres
-                    </span>
+                    <span><i class="fas fa-users"></i> <?= $equipe['nb_membres'] ?> membres</span>
                 </div>
             </div>
             <?php
@@ -460,7 +578,6 @@ class ProfilView extends BaseView
         </div>
 
         <script>
-            // Charger les documents via AJAX
             fetch('?page=profil&action=getDocuments')
                 .then(res => res.json())
                 .then(data => {
@@ -474,8 +591,8 @@ class ProfilView extends BaseView
         <?php
     }
 
-    /**
-     * Rendre la page d'édition du profil
+ /**
+     * Rendre la page d'édition du profil 
      */
     public function renderEdit($profile, $errors = [])
     {
@@ -492,48 +609,173 @@ class ProfilView extends BaseView
 
             <div class="edit-profile-grid">
                 <!-- Photo de profil -->
-                <div class="profile-photo-section">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Photo de profil</h3>
-                        </div>
-                        <div class="card-body">
-                            <?= $this->getPhotoUploadForm($profile) ?>
-                        </div>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-camera"></i>
+                        <h3>Photo de profil</h3>
+                    </div>
+                    <div class="card-body">
+                        <?= $this->getPhotoUploadForm($profile) ?>
                     </div>
                 </div>
 
-                <!-- Informations de base -->
-                <div class="profile-info-section">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Informations personnelles</h3>
-                        </div>
-                        <div class="card-body">
-                            <?= $this->getInfoForm($profile, $errors) ?>
-                        </div>
+                <!-- Informations personnelles -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user"></i>
+                        <h3>Informations personnelles</h3>
+                    </div>
+                    <div class="card-body">
+                        <?= $this->getInfoForm($profile, $errors) ?>
                     </div>
                 </div>
 
                 <!-- Changement de mot de passe -->
-                <div class="profile-password-section">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Changer le mot de passe</h3>
-                        </div>
-                        <div class="card-body">
-                            <?= $this->getPasswordForm() ?>
-                        </div>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-key"></i>
+                        <h3>Changer le mot de passe</h3>
+                    </div>
+                    <div class="card-body">
+                        <?= $this->getPasswordForm() ?>
                     </div>
                 </div>
             </div>
         </div>
 
+        <style>
+            .edit-profile-container {
+                padding: 2rem 0;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .page-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #e5e7eb;
+            }
+
+            .page-header h1 {
+                color: #1f2937;
+                font-size: 1.8rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .btn-back {
+                color: #1e40af;
+                text-decoration: none;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: color 0.2s;
+            }
+
+            .btn-back:hover {
+                color: #1e3a8a;
+                text-decoration: underline;
+            }
+
+            .edit-profile-grid {
+                display: grid;
+                gap: 2rem;
+                grid-template-columns: 1fr;
+            }
+
+            @media (min-width: 768px) {
+                .edit-profile-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .edit-profile-grid > .card:first-child {
+                    grid-column: 1 / 2;
+                }
+                
+                .edit-profile-grid > .card:nth-child(2) {
+                    grid-column: 2 / 3;
+                    grid-row: 1 / 3;
+                }
+                
+                .edit-profile-grid > .card:last-child {
+                    grid-column: 1 / 2;
+                }
+            }
+
+            .card {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+
+            .card-header {
+                background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                color: white !important;
+                padding: 1.25rem 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .card-header i {
+                font-size: 1.25rem;
+                color: white !important;
+            }
+
+            .card-header h3 {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: white !important;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .photo-upload-form {
+                text-align: center;
+            }
+
+            .current-photo {
+                margin-bottom: 1.5rem;
+            }
+
+            .photo-upload-form form {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .info-form,
+            .password-form {
+                max-width: 100%;
+            }
+
+            .form-row {
+                margin-bottom: 1.5rem;
+            }
+
+            .form-row:last-child {
+                margin-bottom: 0;
+            }
+
+            .form-actions {
+                margin-top: 2rem;
+                padding-top: 2rem;
+                border-top: 1px solid #e5e7eb;
+            }
+        </style>
+
         <?php
         $this->renderFooter();
     }
-
-    /**
+   /**
      * Formulaire de photo
      */
     private function getPhotoUploadForm($profile)
@@ -543,33 +785,117 @@ class ProfilView extends BaseView
         <div class="photo-upload-form">
             <div class="current-photo">
                 <?php
+                $photoPath = null;
+                if (!empty($profile['photo'])) {
+                    $photoPath = ASSETS_URL . 'uploads/photos/' . $profile['photo'];
+                }
+                
                 Avatar::render([
-                    'src' => $profile['photo'] ? ASSETS_URL . 'uploads/photos/' . $profile['photo'] : null,
+                    'src' => $photoPath,
                     'name' => $profile['prenom'] . ' ' . $profile['nom'],
                     'size' => 'xxl'
                 ]);
                 ?>
             </div>
             <form method="POST" action="?page=profil&action=updatePhoto" enctype="multipart/form-data">
-                <?php
-                FormInput::render([
-                    'label' => 'Changer la photo',
-                    'name' => 'photo',
-                    'type' => 'file',
-                    'accept' => 'image/*',
-                    'required' => true
-                ]);
+                <div class="form-group">
+                    <label for="photo" class="form-label">
+                        <i class="fas fa-image"></i> Sélectionner une nouvelle photo
+                    </label>
+                    <input 
+                        type="file" 
+                        id="photo" 
+                        name="photo" 
+                        class="form-control" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif"
+                        required
+                    >
+                    <small class="form-help">Formats acceptés: JPG, PNG, GIF (Max 5MB)</small>
+                </div>
 
-                Button::render([
-                    'text' => 'Mettre à jour',
-                    'type' => 'submit',
-                    'variant' => 'primary',
-                    'icon' => 'fa-upload',
-                    'fullWidth' => true
-                ]);
-                ?>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-upload"></i> Mettre à jour la photo
+                </button>
             </form>
         </div>
+        
+        <style>
+            .photo-upload-form {
+                text-align: center;
+            }
+            
+            .current-photo {
+                margin-bottom: 2rem;
+                padding: 1rem;
+                background: #f9fafb;
+                border-radius: 8px;
+            }
+            
+            .form-group {
+                margin-bottom: 1.5rem;
+                text-align: left;
+            }
+            
+            .form-label {
+                display: block;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 0.5rem;
+                font-size: 0.95rem;
+            }
+            
+            .form-label i {
+                color: #1e40af;
+                margin-right: 0.5rem;
+            }
+            
+            .form-control {
+                width: 100%;
+                padding: 0.75rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                transition: border-color 0.2s;
+            }
+            
+            .form-control:focus {
+                outline: none;
+                border-color: #1e40af;
+            }
+            
+            .form-help {
+                display: block;
+                margin-top: 0.5rem;
+                color: #6b7280;
+                font-size: 0.85rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .btn-primary {
+                background: #1e40af;
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #1e3a8a;
+            }
+            
+            .btn-block {
+                width: 100%;
+            }
+        </style>
         <?php
         return ob_get_clean();
     }
@@ -581,51 +907,170 @@ class ProfilView extends BaseView
     {
         ob_start();
         ?>
-        <form method="POST" action="?page=profil&action=update">
-            <?php
-            FormInput::render([
-                'label' => 'Poste',
-                'name' => 'poste',
-                'type' => 'text',
-                'value' => $profile['poste'],
-                'required' => true,
-                'error' => $errors['poste'] ?? null
-            ]);
+        <form method="POST" action="?page=profil&action=update" class="info-form">
+            <div class="form-group">
+                <label for="poste" class="form-label">
+                    <i class="fas fa-briefcase"></i> Poste *
+                </label>
+                <input 
+                    type="text" 
+                    id="poste" 
+                    name="poste" 
+                    class="form-control <?= isset($errors['poste']) ? 'is-invalid' : '' ?>"
+                    value="<?= htmlspecialchars($profile['poste'] ?? '') ?>"
+                    placeholder="Ex: Enseignant-Chercheur, Directeur du Laboratoire"
+                    required
+                >
+                <?php if (isset($errors['poste'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['poste']) ?></div>
+                <?php endif; ?>
+            </div>
 
-            FormInput::render([
-                'label' => 'Grade',
-                'name' => 'grade',
-                'type' => 'text',
-                'value' => $profile['grade'],
-                'required' => true,
-                'error' => $errors['grade'] ?? null
-            ]);
+            <div class="form-group">
+                <label for="grade" class="form-label">
+                    <i class="fas fa-graduation-cap"></i> Grade *
+                </label>
+                <input 
+                    type="text" 
+                    id="grade" 
+                    name="grade" 
+                    class="form-control <?= isset($errors['grade']) ? 'is-invalid' : '' ?>"
+                    value="<?= htmlspecialchars($profile['grade'] ?? '') ?>"
+                    placeholder="Ex: Professeur, Maître de Conférences A"
+                    required
+                >
+                <?php if (isset($errors['grade'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['grade']) ?></div>
+                <?php endif; ?>
+            </div>
 
-            FormInput::render([
-                'label' => 'Domaine de recherche',
-                'name' => 'domaine_recherche',
-                'type' => 'textarea',
-                'value' => $profile['domaine_recherche'],
-                'rows' => 3
-            ]);
+            <div class="form-group">
+                <label for="domaine_recherche" class="form-label">
+                    <i class="fas fa-microscope"></i> Domaine de recherche
+                </label>
+                <textarea 
+                    id="domaine_recherche" 
+                    name="domaine_recherche" 
+                    class="form-control"
+                    rows="4"
+                    placeholder="Ex: Intelligence Artificielle, Machine Learning, Systèmes Distribués..."
+                ><?= htmlspecialchars($profile['domaine_recherche'] ?? '') ?></textarea>
+                <small class="form-help">Décrivez vos principaux domaines de recherche et axes de travail</small>
+            </div>
 
-            FormInput::render([
-                'label' => 'Biographie',
-                'name' => 'biographie',
-                'type' => 'textarea',
-                'value' => $profile['biographie'],
-                'rows' => 5
-            ]);
+            <div class="form-group">
+                <label for="biographie" class="form-label">
+                    <i class="fas fa-user-circle"></i> Biographie / Parcours académique
+                </label>
+                <textarea 
+                    id="biographie" 
+                    name="biographie" 
+                    class="form-control"
+                    rows="6"
+                    placeholder="Décrivez votre parcours académique et professionnel, vos diplômes, vos expériences..."
+                ><?= htmlspecialchars($profile['biographie'] ?? '') ?></textarea>
+                <small class="form-help">Votre parcours académique, expériences, diplômes obtenus, etc.</small>
+            </div>
 
-            Button::render([
-                'text' => 'Enregistrer',
-                'type' => 'submit',
-                'variant' => 'primary',
-                'icon' => 'fa-save',
-                'fullWidth' => true
-            ]);
-            ?>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-save"></i> Enregistrer les modifications
+                </button>
+            </div>
         </form>
+
+        <style>
+            .info-form {
+                max-width: 100%;
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-label {
+                display: block;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 0.5rem;
+                font-size: 0.95rem;
+            }
+            
+            .form-label i {
+                color: #1e40af;
+                margin-right: 0.5rem;
+            }
+            
+            .form-control {
+                width: 100%;
+                padding: 0.75rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                transition: border-color 0.2s;
+                font-family: inherit;
+            }
+            
+            .form-control:focus {
+                outline: none;
+                border-color: #1e40af;
+            }
+            
+            .form-control.is-invalid {
+                border-color: #dc2626;
+            }
+            
+            .invalid-feedback {
+                display: block;
+                color: #dc2626;
+                font-size: 0.875rem;
+                margin-top: 0.25rem;
+            }
+            
+            .form-help {
+                display: block;
+                margin-top: 0.5rem;
+                color: #6b7280;
+                font-size: 0.85rem;
+            }
+            
+            textarea.form-control {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .form-actions {
+                margin-top: 2rem;
+                padding-top: 2rem;
+                border-top: 1px solid #e5e7eb;
+            }
+            
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .btn-primary {
+                background: #1e40af;
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #1e3a8a;
+            }
+            
+            .btn-block {
+                width: 100%;
+            }
+        </style>
         <?php
         return ob_get_clean();
     }
@@ -640,41 +1085,153 @@ class ProfilView extends BaseView
 
         ob_start();
         ?>
-        <form method="POST" action="?page=profil&action=changePassword">
-            <?php
-            FormInput::render([
-                'label' => 'Mot de passe actuel',
-                'name' => 'current_password',
-                'type' => 'password',
-                'required' => true,
-                'error' => $errors['current_password'] ?? null
-            ]);
+        <form method="POST" action="?page=profil&action=changePassword" class="password-form">
+            <div class="form-group">
+                <label for="current_password" class="form-label">
+                    <i class="fas fa-lock"></i> Mot de passe actuel *
+                </label>
+                <input 
+                    type="password" 
+                    id="current_password" 
+                    name="current_password" 
+                    class="form-control <?= isset($errors['current_password']) ? 'is-invalid' : '' ?>"
+                    placeholder="••••••••"
+                    required
+                >
+                <?php if (isset($errors['current_password'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['current_password']) ?></div>
+                <?php endif; ?>
+            </div>
 
-            FormInput::render([
-                'label' => 'Nouveau mot de passe',
-                'name' => 'new_password',
-                'type' => 'password',
-                'required' => true,
-                'error' => $errors['new_password'] ?? null
-            ]);
+            <div class="form-group">
+                <label for="new_password" class="form-label">
+                    <i class="fas fa-key"></i> Nouveau mot de passe *
+                </label>
+                <input 
+                    type="password" 
+                    id="new_password" 
+                    name="new_password" 
+                    class="form-control <?= isset($errors['new_password']) ? 'is-invalid' : '' ?>"
+                    placeholder="••••••••"
+                    required
+                >
+                <?php if (isset($errors['new_password'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password']) ?></div>
+                <?php else: ?>
+                    <small class="form-help">Au moins 6 caractères</small>
+                <?php endif; ?>
+            </div>
 
-            FormInput::render([
-                'label' => 'Confirmer le mot de passe',
-                'name' => 'confirm_password',
-                'type' => 'password',
-                'required' => true,
-                'error' => $errors['confirm_password'] ?? null
-            ]);
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">
+                    <i class="fas fa-check-circle"></i> Confirmer le nouveau mot de passe *
+                </label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password" 
+                    class="form-control <?= isset($errors['confirm_password']) ? 'is-invalid' : '' ?>"
+                    placeholder="••••••••"
+                    required
+                >
+                <?php if (isset($errors['confirm_password'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['confirm_password']) ?></div>
+                <?php endif; ?>
+            </div>
 
-            Button::render([
-                'text' => 'Changer le mot de passe',
-                'type' => 'submit',
-                'variant' => 'danger',
-                'icon' => 'fa-key',
-                'fullWidth' => true
-            ]);
-            ?>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger btn-block">
+                    <i class="fas fa-key"></i> Changer le mot de passe
+                </button>
+            </div>
         </form>
+
+        <style>
+            .password-form {
+                max-width: 100%;
+            }
+
+            .password-form .form-group {
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-label {
+                display: block;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 0.5rem;
+                font-size: 0.95rem;
+            }
+            
+            .form-label i {
+                color: #1e40af;
+                margin-right: 0.5rem;
+            }
+            
+            .form-control {
+                width: 100%;
+                padding: 0.75rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                transition: border-color 0.2s;
+            }
+            
+            .form-control:focus {
+                outline: none;
+                border-color: #1e40af;
+            }
+            
+            .form-control.is-invalid {
+                border-color: #dc2626;
+            }
+            
+            .invalid-feedback {
+                display: block;
+                color: #dc2626;
+                font-size: 0.875rem;
+                margin-top: 0.25rem;
+            }
+            
+            .form-help {
+                display: block;
+                margin-top: 0.5rem;
+                color: #6b7280;
+                font-size: 0.85rem;
+            }
+
+            .password-form .form-actions {
+                margin-top: 2rem;
+                padding-top: 2rem;
+                border-top: 1px solid #e5e7eb;
+            }
+            
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .btn-danger {
+                background: #dc2626;
+                color: white;
+            }
+            
+            .btn-danger:hover {
+                background: #b91c1c;
+            }
+            
+            .btn-block {
+                width: 100%;
+            }
+        </style>
         <?php
         return ob_get_clean();
     }
@@ -701,22 +1258,18 @@ class ProfilView extends BaseView
                     <i class="fas fa-file-pdf"></i>
                 </div>
                 <div class="document-info">
-                    <h4>
-                        <?= htmlspecialchars($doc['nom_document']) ?>
-                    </h4>
+                    <h4><?= htmlspecialchars($doc['nom_document']) ?></h4>
                     <p>
-                        <?= htmlspecialchars($doc['type_document']) ?> •
-                        <?= $this->formatFileSize($doc['taille_fichier']) ?> •
+                        <?= htmlspecialchars($doc['type_document']) ?> • 
+                        <?= $this->formatFileSize($doc['taille_fichier']) ?> • 
                         <?= date('d/m/Y', strtotime($doc['date_upload'])) ?>
                     </p>
                 </div>
                 <div class="document-actions">
-                    <a href="<?= ASSETS_URL ?>uploads/documents/<?= $doc['chemin_fichier'] ?>" target="_blank" class="btn-icon"
-                        title="Télécharger">
+                    <a href="<?= ASSETS_URL ?>uploads/documents/<?= $doc['chemin_fichier'] ?>" target="_blank" class="btn-icon" title="Télécharger">
                         <i class="fas fa-download"></i>
                     </a>
-                    <a href="?page=profil&action=deleteDocument&doc_id=<?= $doc['id_document'] ?>" class="btn-icon btn-danger"
-                        onclick="return confirm('Supprimer ce document ?')" title="Supprimer">
+                    <a href="?page=profil&action=deleteDocument&doc_id=<?= $doc['id_document'] ?>" class="btn-icon btn-danger" onclick="return confirm('Supprimer ce document ?')" title="Supprimer">
                         <i class="fas fa-trash"></i>
                     </a>
                 </div>

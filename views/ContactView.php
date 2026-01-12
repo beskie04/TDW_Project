@@ -11,7 +11,7 @@ require_once __DIR__ . '/components/Card.php';
 class ContactView extends BaseView
 {
     public function __construct()
-    {
+    { parent::__construct();
         $this->currentPage = 'contact';
         $this->pageTitle = 'Nous Contacter';
     }

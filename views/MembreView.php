@@ -21,6 +21,7 @@ class MembreView extends BaseView
 {
     public function __construct()
     {
+           parent::__construct();
         $this->currentPage = 'membres';
         $this->pageTitle = 'Membres et Équipes';
     }
@@ -30,7 +31,7 @@ class MembreView extends BaseView
      */
     public function renderIndex($equipes, $directeur)
     {
-        // Charger les thématiques et tous les membres
+        
         require_once __DIR__ . '/../models/ThematiqueModel.php';
         require_once __DIR__ . '/../models/MembreModel.php';
 
@@ -62,6 +63,7 @@ class MembreView extends BaseView
                     ]
                 ]);
                 ?>
+                <div style="margin: 3rem 0;"></div>
 
                 <!-- Thématiques de recherche -->
                 <?php if (!empty($thematiques)): ?>
@@ -88,7 +90,7 @@ class MembreView extends BaseView
                     });
                     ?>
                 <?php endif; ?>
-
+               <div style="margin: 3rem 0;"></div>
                 <!-- Liste des noms d'équipes -->
                 <?php
                 Section::render([
@@ -107,7 +109,7 @@ class MembreView extends BaseView
                     echo '</div>';
                 });
                 ?>
-
+                 <div style="margin: 3rem 0;"></div>
                 <!-- Organigramme avec Directeur + Slider -->
                 <?php
                 Section::render([
@@ -143,143 +145,10 @@ class MembreView extends BaseView
                         echo '</div>';
                     }
 
-                    // Slider compact - 3 membres par slide
-                    if (!empty($autresMembres)) {
-                        echo '<div style="margin-top: 2rem;">';
-                        echo '<h3 style="margin-bottom: 1.5rem; color: var(--dark-color); font-size: 1.5rem;"><i class="fas fa-users" style="margin-right: 0.5rem;"></i>Membres du Laboratoire</h3>';
+                   
 
-                        // Diviser les membres en groupes de 3
-                        $membresChunks = array_chunk($autresMembres, 3);
-                        $slides = [];
-
-                        foreach ($membresChunks as $chunk) {
-                            $slideHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; padding: 2rem;">';
-
-                            foreach ($chunk as $membre) {
-                                $membrePhotoUrl = $membre['photo'] ? UPLOADS_URL . 'photos/' . $membre['photo'] : null;
-
-                                $slideHtml .= '<div class="card" style="text-align: center; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">';
-                                $slideHtml .= '<div class="card-content" style="padding: 1.5rem;">';
-
-                                // Photo
-                                $slideHtml .= '<div style="display: flex; justify-content: center; margin-bottom: 1rem;">';
-                                if ($membrePhotoUrl) {
-                                    $slideHtml .= '<img src="' . htmlspecialchars($membrePhotoUrl) . '" alt="' . htmlspecialchars($membre['nom']) . '" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color);">';
-                                } else {
-                                    $slideHtml .= '<div style="width: 100px; height: 100px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;"><i class="fas fa-user"></i></div>';
-                                }
-                                $slideHtml .= '</div>';
-
-                                // Info
-                                $slideHtml .= '<h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--dark-color);">';
-                                $slideHtml .= htmlspecialchars($membre['nom'] . ' ' . $membre['prenom']);
-                                $slideHtml .= '</h4>';
-
-                                if (!empty($membre['poste'])) {
-                                    $slideHtml .= '<p style="margin: 0 0 0.25rem 0; color: var(--primary-color); font-weight: 600; font-size: 0.9rem;">';
-                                    $slideHtml .= htmlspecialchars($membre['poste']);
-                                    $slideHtml .= '</p>';
-                                }
-
-                                if (!empty($membre['grade'])) {
-                                    $slideHtml .= '<p style="margin: 0; color: var(--gray-600); font-size: 0.85rem;">';
-                                    $slideHtml .= htmlspecialchars($membre['grade']);
-                                    $slideHtml .= '</p>';
-                                }
-
-                                // Actions
-                                $slideHtml .= '<div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">';
-                                $slideHtml .= '<a href="?page=membres&action=biographie&id=' . $membre['id_membre'] . '" title="Biographie" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;"><i class="fas fa-user"></i></a>';
-                                $slideHtml .= '<a href="?page=membres&action=publications&id=' . $membre['id_membre'] . '" title="Publications" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); color: white; transition: all 0.3s ease; text-decoration: none;"><i class="fas fa-file-alt"></i></a>';
-                                $slideHtml .= '</div>';
-
-                                $slideHtml .= '</div></div>';
-                            }
-
-                            $slideHtml .= '</div>';
-
-                            $slides[] = [
-                                'title' => '',
-                                'description' => $slideHtml
-                            ];
-                        }
-
-                        // Render slider
-                        ?>
-                        <div class="membres-slider"
-                            style="position: relative; background: var(--gray-50); border-radius: 12px; overflow: hidden;">
-                            <div class="slider-container" style="position: relative;">
-                                <?php foreach ($slides as $index => $slide): ?>
-                                    <div class="slider-slide <?= $index === 0 ? 'active' : '' ?>"
-                                        style="display: <?= $index === 0 ? 'block' : 'none' ?>;">
-                                        <?= $slide['description'] ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-
-                            <!-- Controls -->
-                            <div
-                                style="position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 1rem; pointer-events: none;">
-                                <button class="slider-prev-membres"
-                                    style="pointer-events: all; width: 45px; height: 45px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 1.2rem; transition: all 0.3s ease;">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <button class="slider-next-membres"
-                                    style="pointer-events: all; width: 45px; height: 45px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 1.2rem; transition: all 0.3s ease;">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-
-                            <!-- Dots -->
-                            <div style="text-align: center; padding: 1.5rem 0;">
-                                <?php foreach ($slides as $index => $slide): ?>
-                                    <span class="slider-dot-membres <?= $index === 0 ? 'active' : '' ?>" data-slide="<?= $index ?>"
-                                        style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: <?= $index === 0 ? 'var(--primary-color)' : 'var(--gray-300)' ?>; margin: 0 0.25rem; cursor: pointer; transition: all 0.3s ease;"></span>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-
-                        <script>
-                            (function () {
-                                let currentSlide = 0;
-                                const slides = document.querySelectorAll('.membres-slider .slider-slide');
-                                const dots = document.querySelectorAll('.slider-dot-membres');
-                                const total = slides.length;
-
-                                function showSlide(n) {
-                                    slides.forEach(s => s.style.display = 'none');
-                                    dots.forEach(d => {
-                                        d.classList.remove('active');
-                                        d.style.background = 'var(--gray-300)';
-                                    });
-
-                                    currentSlide = (n + total) % total;
-                                    slides[currentSlide].style.display = 'block';
-                                    dots[currentSlide].classList.add('active');
-                                    dots[currentSlide].style.background = 'var(--primary-color)';
-                                }
-
-                                document.querySelector('.slider-next-membres')?.addEventListener('click', () => {
-                                    showSlide(currentSlide + 1);
-                                });
-
-                                document.querySelector('.slider-prev-membres')?.addEventListener('click', () => {
-                                    showSlide(currentSlide - 1);
-                                });
-
-                                dots.forEach((dot, i) => {
-                                    dot.addEventListener('click', () => showSlide(i));
-                                });
-
-                                // Auto-play
-                                setInterval(() => showSlide(currentSlide + 1), 6000);
-                            })();
-                        </script>
-                        <?php
-
-                        // Bouton d'action
-                        echo '<div style="text-align: center; margin-top: 2rem;">';
-
+                                              // Bouton "Voir tous"
+                        echo '<div style="text-align: center; margin-top: 2.5rem;">';
                         Button::render([
                             'text' => 'Voir tous les membres',
                             'icon' => 'fas fa-users',
@@ -287,10 +156,7 @@ class MembreView extends BaseView
                             'href' => '?page=membres&action=tous',
                             'size' => 'large'
                         ]);
-
                         echo '</div>';
-                        echo '</div>';
-                    }
                 });
                 ?>
 
@@ -314,73 +180,69 @@ class MembreView extends BaseView
         $this->renderFooter();
     }
 
-    /**
-     * Render team card
-     */
     private function renderEquipeCard($equipe)
-    {
-        $chefPhotoUrl = $equipe['chef_photo'] ? UPLOADS_URL . 'photos/' . $equipe['chef_photo'] : null;
-        ?>
-        <div class="card">
-            <!-- Header -->
-            <div
-                style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 1.35rem; color: var(--dark-color);">
-                    <?= htmlspecialchars($equipe['nom']) ?>
-                </h3>
+{
+    $chefPhotoUrl = $equipe['chef_photo'] ? UPLOADS_URL . 'photos/' . $equipe['chef_photo'] : null;
+    ?>
+    <div class="card">
+        <!-- Header -->
+        <div style="padding: 1.5rem 1.5rem; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <h3 style="margin: 0; font-size: 1.35rem; color: var(--dark-color); flex: 1;">
+                <?= htmlspecialchars($equipe['nom']) ?>
+            </h3>
+            <?php
+            Badge::render([
+                'text' => $equipe['nb_membres'] . ' membres',
+                'variant' => 'info',
+                'size' => 'small'
+            ]);
+            ?>
+        </div>
+
+        <!-- Content -->
+        <div class="card-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+            <!-- Description -->
+            <p class="card-description" style="margin: 0; color: var(--gray-700); line-height: 1.7; font-size: 0.95rem;">
+                <?= htmlspecialchars($equipe['description'] ?? '') ?>
+            </p>
+
+            <?php if ($equipe['chef_nom']): ?>
+                <!-- Team Leader -->
+                <div style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--gray-50, #f9fafb); border-radius: 8px;">
+                    <?php
+                    Avatar::render([
+                        'src' => $chefPhotoUrl,
+                        'alt' => $equipe['chef_nom'],
+                        'size' => 'medium'
+                    ]);
+                    ?>
+                    <div>
+                        <strong style="display: block; color: var(--gray-500); font-size: 0.8rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Chef d'équipe
+                        </strong>
+                        <p style="margin: 0; color: var(--dark-color); font-weight: 600; font-size: 1rem;">
+                            <?= htmlspecialchars($equipe['chef_nom'] . ' ' . $equipe['chef_prenom']) ?>
+                        </p>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Action -->
+            <div style="padding-top: 1rem; margin-top: auto; border-top: 1px solid var(--gray-200);">
                 <?php
-                Badge::render([
-                    'text' => $equipe['nb_membres'] . ' membres',
-                    'variant' => 'info',
-                    'size' => 'small'
+                Button::render([
+                    'text' => 'Voir l\'équipe',
+                    'icon' => 'fas fa-arrow-right',
+                    'variant' => 'primary',
+                    'href' => '?page=membres&action=equipe&id=' . $equipe['id'],
+                    'block' => true
                 ]);
                 ?>
             </div>
-
-            <!-- Content -->
-            <div class="card-content">
-                <p class="card-description">
-                    <?= htmlspecialchars($equipe['description'] ?? '') ?>
-                </p>
-
-                <?php if ($equipe['chef_nom']): ?>
-                    <!-- Team Leader -->
-                    <div
-                        style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--gray-50, #f9fafb); border-radius: 8px; margin-top: 1rem;">
-                        <?php
-                        Avatar::render([
-                            'src' => $chefPhotoUrl,
-                            'alt' => $equipe['chef_nom'],
-                            'size' => 'medium'
-                        ]);
-                        ?>
-                        <div>
-                            <strong style="display: block; color: var(--gray-500); font-size: 0.85rem; margin-bottom: 0.25rem;">
-                                Chef d'équipe
-                            </strong>
-                            <p style="margin: 0; color: var(--dark-color); font-weight: 600;">
-                                <?= htmlspecialchars($equipe['chef_nom'] . ' ' . $equipe['chef_prenom']) ?>
-                            </p>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <!-- Action -->
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
-                    <?php
-                    Button::render([
-                        'text' => 'Voir l\'équipe',
-                        'icon' => 'fas fa-arrow-right',
-                        'variant' => 'primary',
-                        'href' => '?page=membres&action=equipe&id=' . $equipe['id'],
-                        'block' => true
-                    ]);
-                    ?>
-                </div>
-            </div>
         </div>
-        <?php
-    }
+    </div>
+    <?php
+}
 
     /**
      * Team details page
@@ -754,18 +616,6 @@ class MembreView extends BaseView
                         'placeholder' => 'Tous les postes'
                     ]);
 
-                    // Équipe Filter
-                    $equipeOptions = [];
-                    foreach ($equipes as $e) {
-                        $equipeOptions[] = ['value' => $e['id'], 'text' => $e['nom']];
-                    }
-                    Filter::render([
-                        'id' => 'filter-equipe',
-                        'label' => 'Équipe',
-                        'icon' => 'fas fa-users',
-                        'options' => $equipeOptions,
-                        'placeholder' => 'Toutes les équipes'
-                    ]);
                 });
                 ?>
 
@@ -785,7 +635,6 @@ class MembreView extends BaseView
             const filters = {
                 grade: document.getElementById('filter-grade'),
                 poste: document.getElementById('filter-poste'),
-                equipe: document.getElementById('filter-equipe'),
                 reset: document.getElementById('reset-filters')
             };
 
@@ -800,15 +649,14 @@ class MembreView extends BaseView
                 if (filters.poste.value) params.set('poste', filters.poste.value);
                 else params.delete('poste');
 
-                if (filters.equipe.value) params.set('equipe', filters.equipe.value);
-                else params.delete('equipe');
+               
 
                 window.location.href = '?' + params.toString();
             }
 
             filters.grade.addEventListener('change', applyFilters);
             filters.poste.addEventListener('change', applyFilters);
-            filters.equipe.addEventListener('change', applyFilters);
+           
 
             filters.reset?.addEventListener('click', () => {
                 window.location.href = '?page=membres&action=tous';
@@ -818,7 +666,7 @@ class MembreView extends BaseView
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('grade')) filters.grade.value = urlParams.get('grade');
             if (urlParams.has('poste')) filters.poste.value = urlParams.get('poste');
-            if (urlParams.has('equipe')) filters.equipe.value = urlParams.get('equipe');
+            
         </script>
 
         <?php

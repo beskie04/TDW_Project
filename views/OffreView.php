@@ -12,7 +12,7 @@ require_once __DIR__ . '/components/EmptyState.php';
 class OffreView extends BaseView
 {
     public function __construct()
-    {
+    { parent::__construct();
         $this->currentPage = 'offres';
         $this->pageTitle = 'Offres et Opportunités';
     }
@@ -88,77 +88,84 @@ class OffreView extends BaseView
      * Afficher les cartes d'offres
      */
     private function renderOffresCards($offres)
-    {
-        if (empty($offres)) {
-            EmptyState::render([
-                'icon' => 'fas fa-briefcase',
-                'title' => 'Aucune offre disponible',
-                'description' => 'Revenez plus tard ou modifiez vos filtres'
-            ]);
-            return;
-        }
+{
+    if (empty($offres)) {
+        EmptyState::render([
+            'icon' => 'fas fa-briefcase',
+            'title' => 'Aucune offre disponible',
+            'description' => 'Revenez plus tard ou modifiez vos filtres'
+        ]);
+        return;
+    }
 
-        echo '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">';
+    echo '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 2rem;">';
 
-        foreach ($offres as $offre) {
-            $typeColors = [
-                'stage' => '#3b82f6',
-                'these' => '#8b5cf6',
-                'bourse' => '#10b981',
-                'collaboration' => '#f59e0b'
-            ];
+    foreach ($offres as $offre) {
+        $typeColors = [
+            'stage' => '#3b82f6',
+            'these' => '#8b5cf6',
+            'bourse' => '#10b981',
+            'collaboration' => '#f59e0b'
+        ];
 
-            $typeIcons = [
-                'stage' => 'fas fa-user-graduate',
-                'these' => 'fas fa-graduation-cap',
-                'bourse' => 'fas fa-hand-holding-usd',
-                'collaboration' => 'fas fa-handshake'
-            ];
+        $typeIcons = [
+            'stage' => 'fas fa-user-graduate',
+            'these' => 'fas fa-graduation-cap',
+            'bourse' => 'fas fa-hand-holding-usd',
+            'collaboration' => 'fas fa-handshake'
+        ];
 
-            $color = $typeColors[$offre['type']] ?? '#6b7280';
-            $icon = $typeIcons[$offre['type']] ?? 'fas fa-briefcase';
-            ?>
+        $color = $typeColors[$offre['type']] ?? '#6b7280';
+        $icon = $typeIcons[$offre['type']] ?? 'fas fa-briefcase';
+        ?>
 
-            <div class="card" style="border-top: 4px solid <?= $color ?>;">
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <?php
-                        Badge::render([
-                            'text' => ucfirst($offre['type']),
-                            'color' => $color,
-                            'icon' => $icon,
-                            'size' => 'medium'
-                        ]);
-                        ?>
+        <div class="card" style="border-top: 4px solid <?= $color ?>; display: flex; flex-direction: column;">
+            <div class="card-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; flex: 1;">
+                <!-- Header with Badge and Date -->
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                    <?php
+                    Badge::render([
+                        'text' => ucfirst($offre['type']),
+                        'color' => $color,
+                        'icon' => $icon,
+                        'size' => 'medium'
+                    ]);
+                    ?>
 
-                        <?php if ($offre['date_limite']): ?>
-                            <span style="font-size: 0.875rem; color: var(--gray-600);">
-                                <i class="fas fa-clock"></i>
-                                Limite:
-                                <?= date('d/m/Y', strtotime($offre['date_limite'])) ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
+                    <?php if ($offre['date_limite']): ?>
+                        <span style="font-size: 0.875rem; color: var(--gray-600); display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+                            <i class="fas fa-clock"></i>
+                            <span>Limite: <?= date('d/m/Y', strtotime($offre['date_limite'])) ?></span>
+                        </span>
+                    <?php endif; ?>
+                </div>
 
-                    <h3 class="card-title">
-                        <?= htmlspecialchars($offre['titre']) ?>
-                    </h3>
+                <!-- Title -->
+                <h3 class="card-title" style="margin: 0; font-size: 1.25rem; color: var(--dark-color); line-height: 1.4;">
+                    <?= htmlspecialchars($offre['titre']) ?>
+                </h3>
 
-                    <p class="card-description">
-                        <?= htmlspecialchars(mb_substr($offre['description'], 0, 150)) ?>...
-                    </p>
+                <!-- Description -->
+                <p class="card-description" style="margin: 0; color: var(--gray-600); line-height: 1.6; flex: 1;">
+                    <?= htmlspecialchars(mb_substr($offre['description'], 0, 150)) ?>...
+                </p>
 
-                    <a href="?page=offres&action=details&id=<?= $offre['id_offre'] ?>" class="card-link">
+                <!-- Link -->
+                <div style="padding-top: 1rem; margin-top: auto; border-top: 1px solid var(--gray-200);">
+                    <a href="?page=offres&action=details&id=<?= $offre['id_offre'] ?>" 
+                       class="card-link" 
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; color: <?= $color ?>; font-weight: 600; text-decoration: none; transition: gap 0.3s ease;">
                         Voir les détails
                         <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
             </div>
-            <?php
-        }
-
-        echo '</div>';
+        </div>
+        <?php
     }
+
+    echo '</div>';
+}
 
     /**
      * Détails d'une offre

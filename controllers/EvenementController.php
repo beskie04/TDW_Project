@@ -1,15 +1,18 @@
 <?php
 require_once __DIR__ . '/../models/EvenementModel.php';
+require_once __DIR__ . '/../models/NotificationModel.php';
 require_once __DIR__ . '/../views/EvenementView.php';
 
 class EvenementController
 {
     private $model;
+    private $notificationModel;
     private $view;
 
     public function __construct()
     {
         $this->model = new EvenementModel();
+        $this->notificationModel = new NotificationModel();
         $this->view = new EvenementView();
     }
 
@@ -105,6 +108,9 @@ class EvenementController
             exit;
         }
 
+        // Get event details
+        $evenement = $this->model->getByIdWithDetails($evenementId);
+
         $data = [
             'email' => $_POST['email'] ?? $_SESSION['user']['email'] ?? '',
             'telephone' => $_POST['telephone'] ?? '',
@@ -117,6 +123,33 @@ class EvenementController
         if ($result) {
             $_SESSION['flash_message'] = 'Inscription réussie !';
             $_SESSION['flash_type'] = 'success';
+
+            // Send confirmation notification to user
+            if ($membreId) {
+                $dateDebut = new DateTime($evenement['date_debut']);
+                
+                $this->notificationModel->create([
+                    'id_membre' => $membreId,
+                    'type' => 'inscription_confirmee',
+                    'titre' => 'Inscription confirmée',
+                    'message' => "Votre inscription à l'événement \"{$evenement['titre']}\" est confirmée. L'événement aura lieu le " . $dateDebut->format('d/m/Y à H:i') . ".",
+                    'lien' => "?page=evenements&action=details&id={$evenementId}",
+                    'id_evenement' => $evenementId
+                ]);
+            }
+
+            // Notify organizer if exists
+            if ($evenement['organisateur_id']) {
+                $userName = $data['nom'] . ' ' . $data['prenom'];
+                $this->notificationModel->create([
+                    'id_membre' => $evenement['organisateur_id'],
+                    'type' => 'systeme',
+                    'titre' => 'Nouvelle inscription',
+                    'message' => "{$userName} s'est inscrit à votre événement \"{$evenement['titre']}\".",
+                    'lien' => "?page=admin&section=evenements&action=inscriptions&id={$evenementId}",
+                    'id_evenement' => $evenementId
+                ]);
+            }
         } else {
             $_SESSION['flash_message'] = 'Erreur lors de l\'inscription. Vous êtes peut-être déjà inscrit ou l\'événement est complet.';
             $_SESSION['flash_type'] = 'error';
@@ -144,11 +177,27 @@ class EvenementController
             exit;
         }
 
+        // Get event details before cancellation
+        $evenement = $this->model->getByIdWithDetails($evenementId);
+
         $result = $this->model->annulerInscription($evenementId, $membreId);
 
         if ($result) {
             $_SESSION['flash_message'] = 'Inscription annulée avec succès';
             $_SESSION['flash_type'] = 'success';
+
+            // Notify organizer about cancellation
+            if ($evenement['organisateur_id']) {
+                $userName = $_SESSION['user']['nom'] . ' ' . $_SESSION['user']['prenom'];
+                $this->notificationModel->create([
+                    'id_membre' => $evenement['organisateur_id'],
+                    'type' => 'systeme',
+                    'titre' => 'Annulation d\'inscription',
+                    'message' => "{$userName} a annulé son inscription à l'événement \"{$evenement['titre']}\".",
+                    'lien' => "?page=admin&section=evenements&action=inscriptions&id={$evenementId}",
+                    'id_evenement' => $evenementId
+                ]);
+            }
         } else {
             $_SESSION['flash_message'] = 'Erreur lors de l\'annulation';
             $_SESSION['flash_type'] = 'error';

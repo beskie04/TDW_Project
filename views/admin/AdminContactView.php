@@ -14,6 +14,7 @@ class AdminContactView extends BaseView
 {
     public function __construct()
     {
+         parent::__construct();
         $this->pageTitle = 'Gestion des Messages de Contact';
     }
 

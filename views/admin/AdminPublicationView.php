@@ -6,8 +6,8 @@ require_once __DIR__ . '/../components/Breadcrumb.php';
 require_once __DIR__ . '/../components/FormGroup.php';
 require_once __DIR__ . '/../components/FormInput.php';
 require_once __DIR__ . '/../components/FormActions.php';
-require_once __DIR__ . '/../components/SearchInput.php';
 require_once __DIR__ . '/../components/Filter.php';
+require_once __DIR__ . '/../components/FilterBar.php';
 require_once __DIR__ . '/../components/StatCard.php';
 require_once __DIR__ . '/../components/Table.php';
 require_once __DIR__ . '/../components/ActionButtons.php';
@@ -18,11 +18,12 @@ class AdminPublicationView extends BaseView
 {
     public function __construct()
     {
+        parent::__construct();
         $this->pageTitle = 'Administration - Publications';
         $this->currentPage = 'admin';
     }
 
-    public function renderListe($publications, $stats)
+    public function renderListe($publications, $stats, $types, $auteurs, $projets)
     {
         $this->renderHeader();
         $this->renderFlashMessage();
@@ -50,6 +51,9 @@ class AdminPublicationView extends BaseView
                     ?>
                 </div>
 
+                <!-- Filters -->
+                <?php $this->renderFilters($types, $auteurs, $projets); ?>
+
                 <?php
                 Table::render([
                     'headers' => ['ID', 'Titre', 'Auteurs', 'Type', 'Année', 'Domaine', 'Statut', 'Actions'],
@@ -57,24 +61,12 @@ class AdminPublicationView extends BaseView
                 ], function ($pub) {
                     ?>
                     <tr>
-                        <td>
-                            <?= $pub['id'] ?>
-                        </td>
-                        <td><strong>
-                                <?= htmlspecialchars($pub['titre']) ?>
-                            </strong></td>
-                        <td>
-                            <?= htmlspecialchars(mb_substr($pub['auteurs'], 0, 50)) ?>...
-                        </td>
-                        <td>
-                            <?= htmlspecialchars(strtoupper($pub['type'])) ?>
-                        </td>
-                        <td>
-                            <?= $pub['annee'] ?>
-                        </td>
-                        <td>
-                            <?= htmlspecialchars($pub['domaine_nom'] ?? 'N/A') ?>
-                        </td>
+                        <td><?= $pub['id'] ?></td>
+                        <td><strong><?= htmlspecialchars($pub['titre']) ?></strong></td>
+                        <td><?= htmlspecialchars(mb_substr($pub['auteurs'], 0, 50)) ?>...</td>
+                        <td><?= htmlspecialchars(strtoupper($pub['type'])) ?></td>
+                        <td><?= $pub['annee'] ?></td>
+                        <td><?= htmlspecialchars($pub['domaine_nom'] ?? 'N/A') ?></td>
                         <td>
                             <?php Badge::render(['text' => $pub['validee'] ? 'Validée' : 'En attente', 'variant' => $pub['validee'] ? 'success' : 'warning', 'size' => 'small']); ?>
                         </td>
@@ -120,11 +112,87 @@ class AdminPublicationView extends BaseView
             }
         </script>
 
-        <?php $this->renderFooter();
+        <?php
+        $this->renderFooter();
     }
 
     /**
-     * Render statistics page - NEW!
+     * Render filters section
+     */
+    private function renderFilters($types, $auteurs, $projets)
+    {
+        ?>
+        <div class="filters-card">
+            <?php
+            FilterBar::render(
+                [
+                    'resetId' => 'reset-filters',
+                    'resetText' => 'Réinitialiser'
+                ],
+                function () use ($types, $auteurs, $projets) {
+                    Filter::render([
+                        'id' => 'filter-type',
+                        'label' => 'Type',
+                        'icon' => 'fas fa-tag',
+                        'options' => array_map(function ($key, $value) {
+                            return ['value' => $key, 'text' => $value];
+                        }, array_keys($types), $types),
+                        'placeholder' => 'Tous les types',
+                        'onChange' => 'applyFilters()'
+                    ]);
+
+                    Filter::render([
+                        'id' => 'filter-auteur',
+                        'label' => 'Auteur',
+                        'icon' => 'fas fa-user',
+                        'options' => array_map(function ($auteur) {
+                            return ['value' => $auteur, 'text' => $auteur];
+                        }, $auteurs),
+                        'placeholder' => 'Tous les auteurs',
+                        'onChange' => 'applyFilters()'
+                    ]);
+
+                    Filter::render([
+                        'id' => 'filter-projet',
+                        'label' => 'Projet',
+                        'icon' => 'fas fa-project-diagram',
+                        'options' => array_map(function ($p) {
+                            return ['value' => $p['id_projet'], 'text' => $p['titre']];
+                        }, $projets),
+                        'placeholder' => 'Tous les projets',
+                        'onChange' => 'applyFilters()'
+                    ]);
+                }
+            );
+            ?>
+        </div>
+
+        <script>
+            function applyFilters() {
+                const type = document.getElementById('filter-type').value;
+                const auteur = document.getElementById('filter-auteur').value;
+                const projet = document.getElementById('filter-projet').value;
+
+                const params = new URLSearchParams({
+                    page: 'admin',
+                    section: 'publications',
+                    type,
+                    auteur,
+                    projet
+                });
+
+                window.location.href = '?' + params.toString();
+            }
+
+            document.getElementById('reset-filters')?.addEventListener('click', () => {
+                window.location.href = '?page=admin&section=publications';
+            });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render statistics page
      */
     public function renderStatistics($stats, $types, $auteurs, $annees, $projets)
     {
@@ -146,8 +214,7 @@ class AdminPublicationView extends BaseView
                 </div>
 
                 <!-- PDF Export Section -->
-                <div
-                    style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                     <h3 style="margin: 0 0 1rem 0; color: var(--dark-color); display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
                         Génération de Rapports PDF
@@ -159,8 +226,7 @@ class AdminPublicationView extends BaseView
                         <input type="hidden" name="action" value="generate_pdf">
 
                         <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Type
-                                de rapport</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Type de rapport</label>
                             <select name="type" class="form-control" required onchange="toggleFilters(this.value)">
                                 <option value="all">Toutes les publications</option>
                                 <option value="type">Par type</option>
@@ -171,53 +237,41 @@ class AdminPublicationView extends BaseView
                         </div>
 
                         <div id="filter-type" style="flex: 1; min-width: 200px; display: none;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Type
-                                de publication</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Type de publication</label>
                             <select name="type_value" class="form-control">
                                 <option value="">Tous</option>
                                 <?php foreach ($types as $key => $label): ?>
-                                    <option value="<?= $key ?>">
-                                        <?= $label ?>
-                                    </option>
+                                    <option value="<?= $key ?>"><?= $label ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
 
                         <div id="filter-auteur" style="flex: 1; min-width: 200px; display: none;">
-                            <label
-                                style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Auteur</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Auteur</label>
                             <select name="auteur_value" class="form-control">
                                 <option value="">Tous</option>
                                 <?php foreach ($auteurs as $auteur): ?>
-                                    <option value="<?= htmlspecialchars($auteur) ?>">
-                                        <?= htmlspecialchars($auteur) ?>
-                                    </option>
+                                    <option value="<?= htmlspecialchars($auteur) ?>"><?= htmlspecialchars($auteur) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
 
                         <div id="filter-annee" style="flex: 1; min-width: 200px; display: none;">
-                            <label
-                                style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Année</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Année</label>
                             <select name="annee_value" class="form-control">
                                 <option value="">Toutes</option>
                                 <?php foreach ($annees as $a): ?>
-                                    <option value="<?= $a['annee'] ?>">
-                                        <?= $a['annee'] ?>
-                                    </option>
+                                    <option value="<?= $a['annee'] ?>"><?= $a['annee'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
 
                         <div id="filter-projet" style="flex: 1; min-width: 200px; display: none;">
-                            <label
-                                style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Projet</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Projet</label>
                             <select name="projet_value" class="form-control">
                                 <option value="">Tous</option>
                                 <?php foreach ($projets as $p): ?>
-                                    <option value="<?= $p['id_projet'] ?>">
-                                        <?= htmlspecialchars($p['titre']) ?>
-                                    </option>
+                                    <option value="<?= $p['id_projet'] ?>"><?= htmlspecialchars($p['titre']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -339,27 +393,13 @@ class AdminPublicationView extends BaseView
                     ], function ($pub) {
                         ?>
                         <tr>
-                            <td>
-                                <?= $pub['id'] ?>
-                            </td>
-                            <td><strong>
-                                    <?= htmlspecialchars($pub['titre']) ?>
-                                </strong></td>
-                            <td>
-                                <?= htmlspecialchars(mb_substr($pub['auteurs'], 0, 50)) ?>...
-                            </td>
-                            <td>
-                                <?= htmlspecialchars(strtoupper($pub['type'])) ?>
-                            </td>
-                            <td>
-                                <?= $pub['annee'] ?>
-                            </td>
-                            <td>
-                                <?= htmlspecialchars($pub['domaine_nom'] ?? 'N/A') ?>
-                            </td>
-                            <td>
-                                <?= date('d/m/Y H:i', strtotime($pub['created_at'])) ?>
-                            </td>
+                            <td><?= $pub['id'] ?></td>
+                            <td><strong><?= htmlspecialchars($pub['titre']) ?></strong></td>
+                            <td><?= htmlspecialchars(mb_substr($pub['auteurs'], 0, 50)) ?>...</td>
+                            <td><?= htmlspecialchars(strtoupper($pub['type'])) ?></td>
+                            <td><?= $pub['annee'] ?></td>
+                            <td><?= htmlspecialchars($pub['domaine_nom'] ?? 'N/A') ?></td>
+                            <td><?= date('d/m/Y H:i', strtotime($pub['created_at'])) ?></td>
                             <td>
                                 <?php ActionButtons::render([
                                     ['type' => 'custom', 'icon' => 'fas fa-check', 'onClick' => 'confirmValidate(' . $pub['id'] . ', \'' . htmlspecialchars(addslashes($pub['titre'])) . '\')', 'title' => 'Valider'],
@@ -388,7 +428,8 @@ class AdminPublicationView extends BaseView
             }
         </script>
 
-        <?php $this->renderFooter();
+        <?php
+        $this->renderFooter();
     }
 }
 ?>

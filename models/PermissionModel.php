@@ -29,7 +29,6 @@ class PermissionModel extends BaseModel
      */
     public function getAllRoles()
     {
-        // ⭐ CORRECT: id_role (pas id)
         $sql = "SELECT r.*, 
                        COUNT(DISTINCT rp.id_permission) as nb_permissions,
                        COUNT(DISTINCT m.id_membre) as nb_users
@@ -122,24 +121,24 @@ class PermissionModel extends BaseModel
     }
 
     /**
-     * Récupérer les permissions d'un utilisateur
+     * Récupérer les permissions custom d'un utilisateur (granted only)
      */
     public function getUserPermissions($membreId)
     {
-        $sql = "SELECT p.*, up.granted 
+        $sql = "SELECT p.* 
                 FROM permissions p
                 INNER JOIN user_permissions up ON p.id_permission = up.id_permission
-                WHERE up.id_membre = :membre_id";
+                WHERE up.id_membre = :membre_id AND up.granted = 1";
 
         return $this->query($sql, ['membre_id' => $membreId]);
     }
 
     /**
-     * Vérifier si un utilisateur a une permission
+     * ⭐ NOUVEAU: Vérifier si un utilisateur a une permission (logique simplifiée)
      */
     public function hasPermission($membreId, $permissionName, $resourceOwnerId = null)
     {
-        // Récupérer le rôle de l'utilisateur
+        // ⭐ NOUVEAU: Admin a TOUT
         $sql = "SELECT role_systeme FROM membres WHERE id_membre = :id";
         $result = $this->query($sql, ['id' => $membreId]);
 
@@ -148,6 +147,11 @@ class PermissionModel extends BaseModel
         }
 
         $userRole = $result[0]['role_systeme'];
+
+        // ⭐ ADMIN BYPASS: L'admin a toutes les permissions
+        if ($userRole === 'admin') {
+            return true;
+        }
 
         // Récupérer l'ID du rôle
         $sql = "SELECT id_role FROM roles WHERE nom = :nom";
@@ -159,30 +163,25 @@ class PermissionModel extends BaseModel
 
         $roleId = $roleResult[0]['id_role'];
 
-        // 1. Vérifier si permission explicitement RETIRÉE
-        $sql = "SELECT granted FROM user_permissions up
+        // 1. Vérifier si permission ajoutée via user_permissions (granted = 1)
+        $sql = "SELECT p.is_own FROM user_permissions up
                 INNER JOIN permissions p ON up.id_permission = p.id_permission
-                WHERE up.id_membre = :membre_id AND p.nom = :perm_name";
+                WHERE up.id_membre = :membre_id AND p.nom = :perm_name AND up.granted = 1";
 
         $userPerm = $this->query($sql, [
             'membre_id' => $membreId,
             'perm_name' => $permissionName
         ]);
 
-        if (!empty($userPerm) && $userPerm[0]['granted'] == 0) {
-            return false; // Permission explicitement retirée
-        }
-
-        // 2. Vérifier si permission explicitement AJOUTÉE
-        if (!empty($userPerm) && $userPerm[0]['granted'] == 1) {
-            // Si c'est une permission "own", vérifier ownership
-            if ($resourceOwnerId !== null) {
-                return $this->checkOwnership($permissionName, $membreId, $resourceOwnerId);
+        if (!empty($userPerm)) {
+            // Permission custom accordée - vérifier si "own"
+            if ($userPerm[0]['is_own'] && $resourceOwnerId !== null) {
+                return $membreId == $resourceOwnerId;
             }
             return true;
         }
 
-        // 3. Vérifier permissions du rôle (avec héritage)
+        // 2. Vérifier permissions du rôle (avec héritage)
         $rolePermissions = $this->getRolePermissions($roleId, true);
         $hasRolePermission = false;
 
@@ -203,15 +202,6 @@ class PermissionModel extends BaseModel
     }
 
     /**
-     * Vérifier ownership pour permissions "own"
-     */
-    private function checkOwnership($permissionName, $membreId, $resourceOwnerId)
-    {
-        // Les permissions "own" nécessitent que l'utilisateur soit le propriétaire
-        return $membreId == $resourceOwnerId;
-    }
-
-    /**
      * Ajouter une permission à un utilisateur
      */
     public function grantPermissionToUser($membreId, $permissionId, $grantedBy, $note = '')
@@ -222,7 +212,7 @@ class PermissionModel extends BaseModel
 
         if (!empty($existing)) {
             // Update
-            $sql = "UPDATE user_permissions SET granted = TRUE, granted_by = :by, note = :note, granted_at = NOW()
+            $sql = "UPDATE user_permissions SET granted = 1, granted_by = :by, note = :note, granted_at = NOW()
                     WHERE id_membre = :membre AND id_permission = :perm";
 
             $this->execute($sql, [
@@ -234,7 +224,7 @@ class PermissionModel extends BaseModel
         } else {
             // Insert
             $sql = "INSERT INTO user_permissions (id_membre, id_permission, granted, granted_by, note)
-                    VALUES (:membre, :perm, TRUE, :by, :note)";
+                    VALUES (:membre, :perm, 1, :by, :note)";
 
             $this->execute($sql, [
                 'membre' => $membreId,
@@ -244,54 +234,16 @@ class PermissionModel extends BaseModel
             ]);
         }
 
-        // Log
-        $this->logPermissionChange($membreId, $permissionId, 'granted', null, 'granted', $grantedBy, $note);
-
         return true;
     }
 
     /**
-     * Retirer une permission à un utilisateur
-     */
-    public function revokePermissionFromUser($membreId, $permissionId, $revokedBy, $note = '')
-    {
-        // Vérifier si existe
-        $sql = "SELECT id FROM user_permissions WHERE id_membre = :membre AND id_permission = :perm";
-        $existing = $this->query($sql, ['membre' => $membreId, 'perm' => $permissionId]);
-
-        if (!empty($existing)) {
-            // Update
-            $sql = "UPDATE user_permissions SET granted = FALSE, granted_by = :by, note = :note, granted_at = NOW()
-                    WHERE id_membre = :membre AND id_permission = :perm";
-        } else {
-            // Insert avec granted=FALSE
-            $sql = "INSERT INTO user_permissions (id_membre, id_permission, granted, granted_by, note)
-                    VALUES (:membre, :perm, FALSE, :by, :note)";
-        }
-
-        $this->execute($sql, [
-            'membre' => $membreId,
-            'perm' => $permissionId,
-            'by' => $revokedBy,
-            'note' => $note
-        ]);
-
-        // Log
-        $this->logPermissionChange($membreId, $permissionId, 'revoked', 'granted', 'revoked', $revokedBy, $note);
-
-        return true;
-    }
-
-    /**
-     * Réinitialiser les permissions d'un utilisateur (retour aux permissions du rôle)
+     * Réinitialiser les permissions d'un utilisateur (supprimer toutes les permissions custom)
      */
     public function resetUserPermissions($membreId, $resetBy)
     {
         $sql = "DELETE FROM user_permissions WHERE id_membre = :membre";
         $this->execute($sql, ['membre' => $membreId]);
-
-        // Log
-        $this->logPermissionChange($membreId, null, 'role_changed', 'custom', 'role_default', $resetBy, 'Permissions réinitialisées');
 
         return true;
     }
@@ -356,48 +308,6 @@ class PermissionModel extends BaseModel
         // Supprimer
         $sql = "DELETE FROM roles WHERE id_role = :id";
         return $this->execute($sql, ['id' => $roleId]);
-    }
-
-    /**
-     * Logger un changement de permission
-     */
-    private function logPermissionChange($membreId, $permissionId, $action, $oldValue, $newValue, $changedBy, $note)
-    {
-        $sql = "INSERT INTO permission_logs (id_membre, id_permission, action, old_value, new_value, changed_by, note)
-                VALUES (:membre, :perm, :action, :old, :new, :by, :note)";
-
-        return $this->execute($sql, [
-            'membre' => $membreId,
-            'perm' => $permissionId,
-            'action' => $action,
-            'old' => $oldValue,
-            'new' => $newValue,
-            'by' => $changedBy,
-            'note' => $note
-        ]);
-    }
-
-    /**
-     * Récupérer les logs de permissions
-     */
-    public function getPermissionLogs($limit = 50)
-    {
-        $sql = "SELECT pl.*, 
-                       m.nom as membre_nom, m.prenom as membre_prenom,
-                       p.nom as permission_nom,
-                       cb.nom as changed_by_nom, cb.prenom as changed_by_prenom
-                FROM permission_logs pl
-                INNER JOIN membres m ON pl.id_membre = m.id_membre
-                LEFT JOIN permissions p ON pl.id_permission = p.id_permission
-                INNER JOIN membres cb ON pl.changed_by = cb.id_membre
-                ORDER BY pl.created_at DESC
-                LIMIT :limit";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
     }
 }
 ?>
