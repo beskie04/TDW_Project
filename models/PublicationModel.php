@@ -55,7 +55,7 @@ class PublicationModel extends BaseModel
     }
 
     /**
-     * Filtrer les publications pour le public (validées seulement)
+     * Filtrer les publications pour le public 
      */
     public function filter($filters = [])
     {

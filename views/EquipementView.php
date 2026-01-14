@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
-// Import Generic Framework Components
+// Import  Components
 require_once __DIR__ . '/components/Filter.php';
 require_once __DIR__ . '/components/FilterBar.php';
 require_once __DIR__ . '/components/SearchInput.php';
@@ -59,45 +59,124 @@ class EquipementView extends BaseView
                     <?php endif; ?>
                 </div>
 
-                <!-- Statistics Cards -->
-                <?php if (!empty($stats)): ?>
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                        <?php
-                        StatCard::render([
-                            'title' => 'Total Équipements',
-                            'value' => $stats['total'],
-                            'icon' => 'fas fa-tools',
-                            'variant' => 'primary'
-                        ]);
+               <!-- Statistics Cards  -->
+<?php if (!empty($stats)): ?>
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <?php
+        // Calculate available equipment
+        $libres = 0;
+        foreach ($stats['par_etat'] as $etat) {
+            if ($etat['etat'] === 'libre') {
+                $libres = $etat['total'];
+                break;
+            }
+        }
+        ?>
+        
+        <!-- Total Equipment Card -->
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-content">
+                <h3><?= $stats['total'] ?></h3>
+                <p>Total Équipements</p>
+            </div>
+        </div>
 
-                        StatCard::render([
-                            'title' => 'En utilisation',
-                            'value' => $stats['en_utilisation'],
-                            'subtitle' => $stats['taux_occupation'] . '% occupation',
-                            'icon' => 'fas fa-chart-pie',
-                            'variant' => 'success'
-                        ]);
+        <!-- In Use Card -->
+        <div class="stat-card stat-success">
+            <div class="stat-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="stat-content">
+                <h3><?= $stats['en_utilisation'] ?></h3>
+                <p>En utilisation</p>
+                <small><?= $stats['taux_occupation'] ?>% occupation</small>
+            </div>
+        </div>
 
-                        $libres = 0;
-                        foreach ($stats['par_etat'] as $etat) {
-                            if ($etat['etat'] === 'libre') {
-                                $libres = $etat['total'];
-                                break;
-                            }
-                        }
+        <!-- Available Card -->
+        <div class="stat-card stat-info">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3><?= $libres ?></h3>
+                <p>Disponibles</p>
+                <small>équipements libres</small>
+            </div>
+        </div>
+    </div>
 
-                        StatCard::render([
-                            'title' => 'Disponibles',
-                            'value' => $libres,
-                            'subtitle' => 'équipements libres',
-                            'icon' => 'fas fa-check-circle',
-                            'variant' => 'info'
-                        ]);
-                        ?>
-                    </div>
-                <?php endif; ?>
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
 
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .stat-primary .stat-icon {
+            background: #ffffff;
+        }
+
+        .stat-success .stat-icon {
+            background: #ffffff;
+        }
+
+        .stat-info .stat-icon {
+            background: #ffffff;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 0 0 0.25rem 0;
+            line-height: 1;
+        }
+
+        .stat-content p {
+            color: #6b7280;
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .stat-content small {
+            display: block;
+            color: #f9fbfe;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+<?php endif; ?>
                 <!-- My Reservations Alert -->
                 <?php if ($isLoggedIn && !empty($mesReservations)): ?>
                     <?php
@@ -170,7 +249,86 @@ class EquipementView extends BaseView
                 }
             }
         </script>
+    <script>
+    // Filter functionality
+    const typeFilter = document.getElementById('filter-type');
+    const etatFilter = document.getElementById('filter-etat');
+    const searchInput = document.getElementById('search-input');
+    const resetBtn = document.getElementById('reset-filters');
+    const container = document.getElementById('equipements-container');
+    const loading = document.getElementById('loading');
 
+    // Debounce function for search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Apply filters
+    function applyFilters() {
+        const type = typeFilter?.value || '';
+        const etat = etatFilter?.value || '';
+        const search = searchInput?.value || '';
+
+        // Show loading
+        container.style.opacity = '0.5';
+        loading.style.display = 'block';
+
+        // Build query string
+        const params = new URLSearchParams({
+            page: 'equipements',
+            action: 'filter',
+            type: type,
+            etat: etat,
+            search: search
+        });
+
+        // Fetch filtered results
+        fetch('?' + params.toString())
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    container.innerHTML = data.html;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                container.style.opacity = '1';
+                loading.style.display = 'none';
+            });
+    }
+
+    // Event listeners
+    if (typeFilter) {
+        typeFilter.addEventListener('change', applyFilters);
+    }
+
+    if (etatFilter) {
+        etatFilter.addEventListener('change', applyFilters);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(applyFilters, 500));
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (typeFilter) typeFilter.value = '';
+            if (etatFilter) etatFilter.value = '';
+            if (searchInput) searchInput.value = '';
+            applyFilters();
+        });
+    }
+</script>
         <?php
         $this->renderFooter();
     }
@@ -384,7 +542,7 @@ class EquipementView extends BaseView
     }
 
     /**
-     * Render reservation card (inside alert)
+     * Render reservation card 
      */
     private function renderReservationCard($res)
     {
@@ -508,17 +666,16 @@ class EquipementView extends BaseView
                             'href' => '?page=equipements&action=reserver&id=' . $eq['id']
                         ]);
                         ?>
-                    <?php elseif ($eq['etat'] === 'reserve'): ?>
-                        <!-- Equipment reserved by someone else -->
-                        <?php
-                        Button::render([
-                            'text' => 'Demander quand même',
-                            'icon' => 'fas fa-star',
-                            'variant' => 'warning',
-                            'size' => 'small',
-                            'href' => '?page=equipements&action=reserver&id=' . $eq['id']
-                        ]);
-                        ?>
+                   <?php elseif ($eq['etat'] === 'reserve'): ?>
+    <!-- Equipment reserved by someone else  -->
+    <?php
+    Button::render([
+        'text' => 'Demander',
+        'variant' => 'secondary',
+        'size' => 'small',
+        'href' => '?page=equipements&action=reserver&id=' . $eq['id']
+    ]);
+    ?>
                     <?php else: ?>
                         <!-- In maintenance or other status -->
                         <?php
@@ -565,7 +722,7 @@ class EquipementView extends BaseView
         $this->renderHeader();
         $this->renderFlashMessage();
 
-        // Vérifier s'il y a un conflit
+        // Vérifier si il y a un conflit
         $conflit = isset($_GET['conflit']) && isset($_SESSION['conflit_reservation']);
         $conflitData = $conflit ? $_SESSION['conflit_reservation'] : null;
         ?>
@@ -807,35 +964,72 @@ class EquipementView extends BaseView
                     </div>
 
                     <!-- Statistics Cards -->
-                    <?php if (!empty($statsEquipement)): ?>
-                        <div
-                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                            <?php
-                            StatCard::render([
-                                'title' => 'Total Réservations',
-                                'value' => $statsEquipement['total_reservations'],
-                                'icon' => 'fas fa-calendar',
-                                'variant' => 'primary'
-                            ]);
+<?php if (!empty($statsEquipement)): ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- Total Reservations -->
+        <div class="stat-card stat-primary">
+            <div class="stat-content">
+                <h3><?= $statsEquipement['total_reservations'] ?></h3>
+                <p>Total Réservations</p>
+            </div>
+        </div>
 
-                            StatCard::render([
-                                'title' => 'Réservations Actives',
-                                'value' => $statsEquipement['reservations_actives'],
-                                'icon' => 'fas fa-calendar-check',
-                                'variant' => 'success'
-                            ]);
+        <!-- Active Reservations -->
+        <div class="stat-card stat-success">
+            <div class="stat-content">
+                <h3><?= $statsEquipement['reservations_actives'] ?></h3>
+                <p>Réservations Actives</p>
+            </div>
+        </div>
 
-                            StatCard::render([
-                                'title' => 'Utilisateurs',
-                                'value' => $statsEquipement['utilisateurs_uniques'],
-                                'subtitle' => 'utilisateurs uniques',
-                                'icon' => 'fas fa-users',
-                                'variant' => 'info'
-                            ]);
-                            ?>
-                        </div>
-                    <?php endif; ?>
+        <!-- Unique Users -->
+        <div class="stat-card stat-info">
+            <div class="stat-content">
+                <h3><?= $statsEquipement['utilisateurs_uniques'] ?></h3>
+                <p>Utilisateurs</p>
+                <small>utilisateurs uniques</small>
+            </div>
+        </div>
+    </div>
 
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 0 0 0.25rem 0;
+            line-height: 1;
+        }
+
+        .stat-content p {
+            color: #6b7280;
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .stat-content small {
+            display: block;
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+<?php endif; ?>
                     <!-- Main Content Grid -->
                     <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem; align-items: start;">
                         <!-- Left Column -->

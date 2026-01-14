@@ -9,7 +9,7 @@ class AccueilModel extends BaseModel
     public function getActualitesSlider()
     {
         try {
-            // ⭐ VERSION SIMPLE: Récupérer directement depuis les vraies tables
+            
             $sql = "
                 (SELECT 
                     id_projet as id_entite,
@@ -59,7 +59,7 @@ class AccueilModel extends BaseModel
 
             $result = $this->query($sql);
             
-            // ⭐ DEBUG: Vérifier le résultat
+            //  Vérifier le résultat
             if ($result === false || !is_array($result)) {
                 error_log("AccueilModel::getActualitesSlider() - Requête échouée");
                 return [];

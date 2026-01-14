@@ -1,5 +1,5 @@
 <?php
-// ⚠️ IMPORTANT: Start session first!
+//  Start session first!
 session_start();
 
 require_once __DIR__ . '/config/constants.php';
@@ -29,7 +29,7 @@ switch ($page) {
         $controller->logout();
         break;
 
-    // ==================== NOUVEAU: ROUTES NOTIFICATIONS ====================
+    // ====================  ROUTES NOTIFICATIONS ====================
     case 'notifications':
         if (!isset($_SESSION['user'])) {
             header('Location: ?page=login');
@@ -589,7 +589,25 @@ switch ($page) {
                 }
                 break;
 
-           // À remplacer dans ton index.php, section: case 'dashboard':
+          case 'settings':
+    if ($_SESSION['user']['role'] !== 'admin') {
+        require_once __DIR__ . '/views/BaseView.php';
+        BaseView::setFlash('Accès refusé. Cette section est réservée aux administrateurs.', 'error');
+        header('Location: ?page=admin');
+        exit;
+    }
+
+    require_once __DIR__ . '/controllers/admin/AdminSettingsController.php';
+    $controller = new AdminSettingsController();
+
+    switch ($action) {
+        case 'update':
+            $controller->update();
+            break;
+        default:
+            $controller->index();
+    }
+    break;
 
 case 'dashboard':
 default:
@@ -804,7 +822,7 @@ default:
                 echo '<div class="admin-cards-grid">';
                 
                 $adminCards = [
-                    // NOUVELLE CARTE UNIFIÉE
+                 
                     [
                         'url' => 'membres', 
                         'icon' => 'fa-users-cog', 
@@ -812,6 +830,7 @@ default:
                         'desc' => 'Gérer les utilisateurs et leurs accès'
                     ],
                     ['url' => 'equipes', 'icon' => 'fa-users-cog', 'title' => 'Gérer les équipes', 'desc' => 'Organiser les équipes de recherche'],
+                     ['url' => 'settings', 'icon' => 'fa-cog', 'title' => 'Paramètres du Site', 'desc' => 'Gérer les informations et configurations'],
                     ['url' => 'projets', 'icon' => 'fa-project-diagram', 'title' => 'Gérer les projets', 'desc' => 'Créer, modifier, suivre les projets'],
                     ['url' => 'publications', 'icon' => 'fa-file-alt', 'title' => 'Gérer les publications', 'desc' => 'Valider et organiser les publications'],
                     ['url' => 'equipements', 'icon' => 'fa-server', 'title' => 'Gérer les équipements', 'desc' => 'Gestion complète des ressources'],

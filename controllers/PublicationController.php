@@ -1,7 +1,5 @@
 <?php
-// ============================================================================
-// PublicationController.php - FINAL BULLETPROOF VERSION
-// ============================================================================
+
 require_once __DIR__ . '/../models/PublicationModel.php';
 require_once __DIR__ . '/../views/PublicationView.php';
 
@@ -34,14 +32,14 @@ class PublicationController
             ob_end_clean();
         }
 
-        // Start fresh
+        // Start 
         ob_start();
 
         // Set JSON header
         header('Content-Type: application/json; charset=utf-8');
 
         try {
-            // Build clean filters - ONLY include non-empty values
+            
             $filters = [];
 
             if (isset($_GET['annee']) && $_GET['annee'] !== '' && $_GET['annee'] !== null) {

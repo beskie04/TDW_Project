@@ -78,11 +78,11 @@ class PdfGenerator
             $filterText = 'Filtres appliqués: ';
             $filterParts = [];
 
-            if (!empty($filters['thematique'])) {
-                $filterParts[] = 'Thématique: ' . $filters['thematique'];
+            if (!empty($filters['thematique_nom'])) {
+                $filterParts[] = 'Thématique: ' . $filters['thematique_nom'];
             }
-            if (!empty($filters['responsable'])) {
-                $filterParts[] = 'Responsable: ' . $filters['responsable'];
+            if (!empty($filters['responsable_nom'])) {
+                $filterParts[] = 'Responsable: ' . $filters['responsable_nom'];
             }
             if (!empty($filters['annee'])) {
                 $filterParts[] = 'Année: ' . $filters['annee'];
@@ -116,8 +116,12 @@ class PdfGenerator
             $statuts[$statut] = ($statuts[$statut] ?? 0) + 1;
         }
 
-        // Calculate total budget
-        $budgetTotal = array_sum(array_column($projets, 'budget'));
+        // Count by thematic
+        $thematiques = [];
+        foreach ($projets as $p) {
+            $them = $p['thematique_nom'] ?? 'Non défini';
+            $thematiques[$them] = ($thematiques[$them] ?? 0) + 1;
+        }
 
         // Summary box
         $this->pdf->SetFillColor(240, 248, 255);
@@ -128,17 +132,28 @@ class PdfGenerator
         $this->pdf->RoundedRect(15, $y, 180, 30, 3, '1111', 'F');
 
         $this->pdf->SetXY(20, $y + 5);
-        $this->pdf->Cell(85, 6, 'Nombre total de projets: ' . count($projets), 0, 0, 'L');
-
-        $this->pdf->SetXY(105, $y + 5);
-        $this->pdf->Cell(85, 6, 'Budget total: ' . number_format($budgetTotal, 0, ',', ' ') . ' DZD', 0, 1, 'L');
+        $this->pdf->Cell(0, 6, 'Nombre total de projets: ' . count($projets), 0, 1, 'L');
 
         $this->pdf->SetXY(20, $y + 12);
         $statusText = [];
         foreach ($statuts as $statut => $count) {
             $statusText[] = "$statut: $count";
         }
-        $this->pdf->Cell(0, 6, 'Répartition: ' . implode(' | ', $statusText), 0, 1, 'L');
+        $this->pdf->Cell(0, 6, 'Par statut: ' . implode(' | ', $statusText), 0, 1, 'L');
+
+        $this->pdf->SetXY(20, $y + 19);
+        $themText = [];
+        $count = 0;
+        foreach ($thematiques as $them => $cnt) {
+            if ($count < 3) { // Show only first 3
+                $themText[] = "$them: $cnt";
+                $count++;
+            }
+        }
+        if (count($thematiques) > 3) {
+            $themText[] = '...';
+        }
+        $this->pdf->Cell(0, 6, 'Par thématique: ' . implode(' | ', $themText), 0, 1, 'L');
 
         $this->pdf->Ln(15);
     }
@@ -167,7 +182,7 @@ class PdfGenerator
         // Card background
         $this->pdf->SetFillColor(255, 255, 255);
         $this->pdf->SetDrawColor(200, 200, 200);
-        $this->pdf->RoundedRect(15, $y, 180, 35, 2, '1111', 'DF');
+        $this->pdf->RoundedRect(15, $y, 180, 30, 2, '1111', 'DF');
 
         // Project number & title
         $this->pdf->SetXY(20, $y + 4);
@@ -202,14 +217,10 @@ class PdfGenerator
         $statut = $projet['statut_nom'] ?? 'Non défini';
         $this->pdf->Cell(0, 5, 'Statut: ' . $statut, 0, 1, 'L');
 
-        // Row 3: Budget & Financement
+        // Row 3: Financement only
         $this->pdf->SetXY(30, $y + 23);
-        $budget = $projet['budget'] ? number_format($projet['budget'], 0, ',', ' ') . ' DZD' : 'Non défini';
-        $this->pdf->Cell(85, 5, 'Budget: ' . $budget, 0, 0, 'L');
-
-        $this->pdf->SetX(115);
         $financement = $projet['type_financement_nom'] ?? 'Non défini';
-        $this->pdf->Cell(0, 5, 'Financement: ' . $financement, 0, 1, 'L');
+        $this->pdf->Cell(0, 5, 'Type de financement: ' . $financement, 0, 1, 'L');
 
         $this->pdf->Ln(8);
     }
@@ -222,4 +233,3 @@ class PdfGenerator
         return $this->pdf;
     }
 }
-?>

@@ -134,11 +134,11 @@ class PermissionModel extends BaseModel
     }
 
     /**
-     * ⭐ NOUVEAU: Vérifier si un utilisateur a une permission (logique simplifiée)
+     *  Vérifier si un utilisateur a une permission 
      */
     public function hasPermission($membreId, $permissionName, $resourceOwnerId = null)
     {
-        // ⭐ NOUVEAU: Admin a TOUT
+        //  Admin a TOUT
         $sql = "SELECT role_systeme FROM membres WHERE id_membre = :id";
         $result = $this->query($sql, ['id' => $membreId]);
 

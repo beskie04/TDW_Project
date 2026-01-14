@@ -1,7 +1,6 @@
 <?php
-// ⭐ AJOUT: Import PermissionHelper
-require_once __DIR__ . '/../../utils/PermissionHelper.php';
 
+require_once __DIR__ . '/../../utils/PermissionHelper.php';
 require_once __DIR__ . '/../../models/ProjetModel.php';
 require_once __DIR__ . '/../../models/PartenaireModel.php';
 require_once __DIR__ . '/../../views/admin/AdminProjetView.php';
@@ -186,7 +185,7 @@ class AdminProjetController
         $id = $this->model->insert($data);
 
         if ($id) {
-            // ⭐ FIX: Admin bypass OU permission manage_projet_members
+         
             $canManageMembers = ($_SESSION['user']['role'] === 'admin') || hasPermission('manage_projet_members');
             
             if (!empty($_POST['membres']) && $canManageMembers) {
@@ -309,7 +308,7 @@ class AdminProjetController
         $success = $this->model->update($id, $data);
 
         if ($success) {
-            // ⭐ FIX: Admin bypass OU permission manage_projet_members
+        
             $canManageMembers = ($_SESSION['user']['role'] === 'admin') || hasPermission('manage_projet_members');
             
             if (isset($_POST['membres']) && $canManageMembers) {
@@ -431,23 +430,23 @@ class AdminProjetController
         return $partenaires;
     }
 
-    private function getEnhancedStatistics()
-    {
-        $stats = $this->model->getStatistics();
+   private function getEnhancedStatistics()
+{
+    $stats = $this->model->getStatistics();
 
-        $sql = "SELECT 
-                    CONCAT(m.nom, ' ', m.prenom) as responsable_nom,
-                    COUNT(p.id_projet) as total
-                FROM membres m
-                LEFT JOIN projets p ON m.id_membre = p.responsable_id
-                WHERE p.id_projet IS NOT NULL
-                GROUP BY m.id_membre, m.nom, m.prenom
-                ORDER BY total DESC";
-        $stats['par_responsable'] = $this->model->query($sql);
+    
+    $sql = "SELECT 
+                CONCAT(m.nom, ' ', m.prenom) as responsable_nom,
+                COUNT(p.id_projet) as total
+            FROM membres m
+            LEFT JOIN projets p ON m.id_membre = p.responsable_id
+            WHERE p.id_projet IS NOT NULL
+            GROUP BY m.id_membre, m.nom, m.prenom
+            ORDER BY total DESC";
+    $stats['par_responsable'] = $this->model->query($sql);
 
-        return $stats;
-    }
-
+    return $stats;
+}
     private function getFilteredProjects($filters)
     {
         $sql = "SELECT p.*, 
@@ -489,11 +488,19 @@ class AdminProjetController
         return $this->model->query($sql, $params);
     }
 
-    private function getThematiques()
-    {
-        return $this->model->query("SELECT id_thematique as id, nom_thematique as nom FROM thematiques ORDER BY nom_thematique");
-    }
+   
 
+private function getThematiques()
+{
+    
+    return $this->model->query("SELECT 
+        id_thematique, 
+        id_thematique as id, 
+        nom_thematique, 
+        nom_thematique as nom 
+        FROM thematiques 
+        ORDER BY nom_thematique");
+}
     private function getStatuts()
     {
         return $this->model->query("SELECT * FROM statuts_projet ORDER BY nom_statut");

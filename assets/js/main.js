@@ -1,4 +1,50 @@
-// Fermeture des messages flash
+// ==================== NAVIGATION MOBILE MENU ====================
+(function() {
+    'use strict';
+    
+    function initNavigation() {
+        const toggle = document.querySelector('.mobile-toggle');
+        const menu = document.querySelector('.nav-menu');
+        
+        if (!toggle || !menu) {
+            console.log('Navigation: mobile-toggle or nav-menu not found');
+            return;
+        }
+        
+        console.log('Navigation: Initialized successfully');
+        
+        // Toggle menu on click
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            menu.classList.toggle('active');
+            console.log('Menu toggled:', menu.classList.contains('active'));
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+        
+        // Close menu when clicking a link
+        const menuLinks = menu.querySelectorAll('a');
+        menuLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                menu.classList.remove('active');
+            });
+        });
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initNavigation);
+    } else {
+        initNavigation();
+    }
+})();
+
+// ==================== FLASH MESSAGES ====================
 document.addEventListener('DOMContentLoaded', function () {
     const closeButtons = document.querySelectorAll('.close-flash');
     closeButtons.forEach(btn => {
@@ -35,7 +81,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Filtrage des projets
+// ==================== FILTRAGE DES PROJETS ====================
 if (document.getElementById('filter-thematique')) {
     const filterThematique = document.getElementById('filter-thematique');
     const filterStatut = document.getElementById('filter-statut');
@@ -44,17 +90,14 @@ if (document.getElementById('filter-thematique')) {
     const projetsContainer = document.getElementById('projets-container');
     const loading = document.getElementById('loading');
 
-    // Fonction de filtrage
     function filterProjets() {
         const thematique = filterThematique.value;
         const statut = filterStatut.value;
         const responsable = filterResponsable.value;
 
-        // Afficher le loading
         loading.style.display = 'block';
         projetsContainer.style.opacity = '0.5';
 
-        // Construire l'URL
         const params = new URLSearchParams({
             page: 'projets',
             action: 'filter',
@@ -79,12 +122,10 @@ if (document.getElementById('filter-thematique')) {
             });
     }
 
-    // Événements sur les filtres
     filterThematique.addEventListener('change', filterProjets);
     filterStatut.addEventListener('change', filterProjets);
     filterResponsable.addEventListener('change', filterProjets);
 
-    // Réinitialiser les filtres
     resetBtn.addEventListener('click', function () {
         filterThematique.value = '';
         filterStatut.value = '';
@@ -93,10 +134,7 @@ if (document.getElementById('filter-thematique')) {
     });
 }
 
-// Filtrage des publications (AJAX)
-// Find this section in your main.js and REPLACE it:
-
-// Filtrage des publications (AJAX)
+// ==================== FILTRAGE DES PUBLICATIONS ====================
 if (document.getElementById('filter-annee') && document.getElementById('publications-container')) {
     console.log('Publications filters: Initializing...');
 
@@ -111,11 +149,9 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
 
     let searchTimeout;
 
-    // Check if all elements exist
     if (filterAnnee && filterType && filterDomaine && filterAuteur && searchInput && resetBtn) {
         console.log('Publications filters: All elements found');
 
-        // Fonction de filtrage
         function filterPublications() {
             console.log('Publications filters: Filtering...');
 
@@ -127,13 +163,11 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
 
             console.log('Filter values:', { annee, type, domaine, auteur, search });
 
-            // Afficher le loading
             if (loading) {
                 loading.style.display = 'block';
             }
             publicationsContainer.style.opacity = '0.5';
 
-            // Construire l'URL
             const params = new URLSearchParams({
                 page: 'publications',
                 action: 'filter',
@@ -147,23 +181,19 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
             const url = '?' + params.toString();
             console.log('Fetching:', url);
 
-            // Requête AJAX
             fetch(url)
                 .then(response => {
                     console.log('Response status:', response.status);
-                    console.log('Response headers:', response.headers.get('content-type'));
-                    return response.text(); // Get as text first to see what's being returned
+                    return response.text();
                 })
                 .then(text => {
-                    console.log('Raw response:', text.substring(0, 200)); // Log first 200 chars
+                    console.log('Raw response:', text.substring(0, 200));
 
-                    // Try to parse as JSON
                     let data;
                     try {
                         data = JSON.parse(text);
                     } catch (e) {
                         console.error('JSON Parse Error:', e);
-                        console.error('Response was:', text);
                         throw new Error('Invalid JSON response: ' + text.substring(0, 100));
                     }
 
@@ -177,12 +207,7 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
                         }
                         console.log('Publications filters: Success! Found', data.count, 'publications');
                     } else {
-                        // Show error message to user
                         console.error('Publications filters: Server returned success=false');
-                        console.error('Error:', data.error);
-                        console.error('Trace:', data.trace);
-
-                        // Display error in the container
                         publicationsContainer.innerHTML = data.html || `
                             <div style="padding: 2rem; text-align: center; color: #ef4444;">
                                 <h3>Erreur de filtrage</h3>
@@ -210,38 +235,18 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
                 });
         }
 
-        // Événements sur les filtres
-        filterAnnee.addEventListener('change', function () {
-            console.log('Année changed:', this.value);
-            filterPublications();
-        });
+        filterAnnee.addEventListener('change', filterPublications);
+        filterType.addEventListener('change', filterPublications);
+        filterDomaine.addEventListener('change', filterPublications);
+        filterAuteur.addEventListener('change', filterPublications);
 
-        filterType.addEventListener('change', function () {
-            console.log('Type changed:', this.value);
-            filterPublications();
-        });
-
-        filterDomaine.addEventListener('change', function () {
-            console.log('Domaine changed:', this.value);
-            filterPublications();
-        });
-
-        filterAuteur.addEventListener('change', function () {
-            console.log('Auteur changed:', this.value);
-            filterPublications();
-        });
-
-        // Recherche avec délai
         searchInput.addEventListener('input', function () {
-            console.log('Search input:', this.value);
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(filterPublications, 500);
         });
 
-        // Réinitialiser les filtres
         if (resetBtn) {
             resetBtn.addEventListener('click', function () {
-                console.log('Reset button clicked');
                 filterAnnee.value = '';
                 filterType.value = '';
                 filterDomaine.value = '';
@@ -254,7 +259,8 @@ if (document.getElementById('filter-annee') && document.getElementById('publicat
         console.log('Publications filters: Setup complete');
     }
 }
-// Filtrage des équipements (AJAX)
+
+// ==================== FILTRAGE DES ÉQUIPEMENTS ====================
 if (document.getElementById('filter-type') && document.querySelector('.equipements-grid')) {
     const filterType = document.getElementById('filter-type');
     const filterEtat = document.getElementById('filter-etat');
@@ -310,15 +316,5 @@ if (document.getElementById('filter-type') && document.querySelector('.equipemen
         filterEtat.value = '';
         searchInput.value = '';
         filterEquipements();
-    });
-}
-
-// Menu mobile toggle
-const mobileToggle = document.querySelector('.mobile-toggle');
-const navMenu = document.querySelector('.nav-menu');
-
-if (mobileToggle) {
-    mobileToggle.addEventListener('click', function () {
-        navMenu.classList.toggle('active');
     });
 }

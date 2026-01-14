@@ -24,11 +24,11 @@ class EquipementController
 
         // Si connecté, récupérer ses réservations
         $mesReservations = [];
-        $mesEquipementsReserves = []; // ✅ NOUVEAU
+        $mesEquipementsReserves = []; 
         if (isset($_SESSION['user']) && isset($_SESSION['user']['id_membre'])) {
             $mesReservations = $this->model->getReservationsByMembre($_SESSION['user']['id_membre']);
 
-            // ✅ Extraire les IDs des équipements déjà réservés
+            //  Extraire les IDs des équipements déjà réservés
             foreach ($mesReservations as $res) {
                 $mesEquipementsReserves[] = $res['id_equipement'];
             }
@@ -80,7 +80,7 @@ class EquipementController
         $reservations = $this->model->getReservations($id);
         $statsEquipement = $this->model->getStatistiquesEquipement($id);
 
-        // ✅ NOUVEAU : Vérifier si l'utilisateur a déjà réservé
+        //  Vérifier si l'utilisateur a déjà réservé
         $userHasReservation = false;
         if (isset($_SESSION['user']['id_membre'])) {
             foreach ($reservations as $res) {

@@ -186,36 +186,36 @@ class ProjetModel extends BaseModel
         return $this->query($sql, ['projet_id' => $projetId]);
     }
 
-    /**
-     * Statistiques des projets
-     */
-    public function getStatistics()
-    {
-        $stats = [];
+   public function getStatistics()
+{
+    $stats = [];
 
-        // Par thématique
-        $sql = "SELECT t.nom_thematique as nom, COUNT(p.id_projet) as total
-                FROM thematiques t
-                LEFT JOIN projets p ON t.id_thematique = p.id_thematique
-                GROUP BY t.id_thematique, t.nom_thematique";
-        $stats['par_thematique'] = $this->query($sql);
+    // Par thématique 
+    $sql = "SELECT t.nom_thematique as nom, COUNT(p.id_projet) as total
+            FROM thematiques t
+            LEFT JOIN projets p ON t.id_thematique = p.id_thematique
+            GROUP BY t.id_thematique, t.nom_thematique
+            ORDER BY t.nom_thematique";
+    $stats['par_thematique'] = $this->query($sql);
 
-        // Par statut
-        $sql = "SELECT s.nom_statut, COUNT(p.id_projet) as total
-                FROM statuts_projet s
-                LEFT JOIN projets p ON s.id_statut = p.id_statut
-                GROUP BY s.id_statut, s.nom_statut";
-        $stats['par_statut'] = $this->query($sql);
+    // Par statut
+    $sql = "SELECT s.nom_statut, COUNT(p.id_projet) as total
+            FROM statuts_projet s
+            LEFT JOIN projets p ON s.id_statut = p.id_statut
+            GROUP BY s.id_statut, s.nom_statut
+            ORDER BY s.nom_statut";
+    $stats['par_statut'] = $this->query($sql);
 
-        // Par année
-        $sql = "SELECT YEAR(date_debut) as annee, COUNT(*) as total
-                FROM projets
-                GROUP BY YEAR(date_debut)
-                ORDER BY annee DESC";
-        $stats['par_annee'] = $this->query($sql);
+    // Par année
+    $sql = "SELECT YEAR(date_debut) as annee, COUNT(*) as total
+            FROM projets
+            WHERE date_debut IS NOT NULL
+            GROUP BY YEAR(date_debut)
+            ORDER BY annee DESC";
+    $stats['par_annee'] = $this->query($sql);
 
-        return $stats;
-    }
+    return $stats;
+}
 
     public function getPartenaires($projetId)
     {

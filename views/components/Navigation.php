@@ -56,14 +56,30 @@ class Navigation
     public function render(): void
     {
         $isAuthenticated = !empty($this->user);
+        
+        echo '<style>
+        .logo { font-size: 0.9rem; }
+        .logo i { font-size: 1.2rem; }
+        .nav-menu { gap: 0.4rem; flex-wrap: nowrap; justify-content: center !important; }
+        .nav-menu a { padding: 0.5rem 0.65rem; font-size: 0.9rem; }
+        .nav-wrapper { justify-content: center !important; }
+        @media (max-width: 1280px) {
+            .logo { font-size: 0.85rem; }
+            .nav-menu { gap: 0.3rem; }
+            .nav-menu a { padding: 0.45rem 0.55rem; font-size: 0.85rem; }
+        }
+        @media (max-width: 1024px) {
+            .logo { font-size: 0.8rem; }
+            .nav-menu a { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
+        }
+        </style>';
         ?>
         <nav class="main-nav">
             <div class="<?= htmlspecialchars($this->config['container_class']) ?>">
                 <div class="nav-wrapper">
-                    <?php $this->renderLogo(); ?>
                     <?php $this->renderMenu($isAuthenticated); ?>
                     
-                    <!-- NOTIFICATION BELL - NOUVEAU -->
+                    
                     <?php if ($isAuthenticated): ?>
                         <?php $this->renderNotificationBell(); ?>
                     <?php endif; ?>
@@ -129,7 +145,7 @@ class Navigation
     }
 
     /**
-     * NOUVEAU: Rendu de la cloche de notification
+     * Rendu de la cloche de notification
      */
     private function renderNotificationBell(): void
     {

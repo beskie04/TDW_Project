@@ -178,29 +178,12 @@ class ProfilController
     }
 
     /**
-     * Gérer les documents personnels
-     */
-    public function documents()
-    {
-        // Vérifier que l'utilisateur est connecté
-        if (!isset($_SESSION['user']['id'])) {
-            header('Location: ?page=login');
-            exit;
-        }
-
-        $userId = $_SESSION['user']['id'];
-        $documents = $this->model->getUserDocuments($userId);
-
-        $this->view->renderDocuments($documents);
-    }
-
-    /**
      * Uploader un document
      */
     public function uploadDocument()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
@@ -214,7 +197,7 @@ class ProfilController
 
         if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
             BaseView::setFlash('Aucun document sélectionné ou erreur lors du téléchargement', 'error');
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
@@ -224,13 +207,13 @@ class ProfilController
 
         if (!in_array($file['type'], $allowedTypes)) {
             BaseView::setFlash('Type de fichier non autorisé. Utilisez PDF ou Word', 'error');
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
         if ($file['size'] > $maxSize) {
             BaseView::setFlash('Le fichier est trop volumineux (max 10MB)', 'error');
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
@@ -254,7 +237,75 @@ class ProfilController
             BaseView::setFlash($uploadResult['message'], 'error');
         }
 
-        header('Location: ?page=profil&action=documents');
+        header('Location: ?page=profil');
+        exit;
+    }
+
+    /**
+     * Download a document
+     */
+    public function downloadDocument()
+    {
+        if (!isset($_SESSION['user']['id'])) {
+            header('Location: ?page=login');
+            exit;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        $documentId = $_GET['doc_id'] ?? null;
+
+        if (!$documentId) {
+            BaseView::setFlash('Document introuvable', 'error');
+            header('Location: ?page=profil');
+            exit;
+        }
+
+        // Get document
+        $document = $this->model->getDocument($documentId, $userId);
+
+        if (!$document) {
+            BaseView::setFlash('Document introuvable ou accès refusé', 'error');
+            header('Location: ?page=profil');
+            exit;
+        }
+
+        $filePath = __DIR__ . '/../../assets/uploads/documents/' . $document['chemin_fichier'];
+
+        if (!file_exists($filePath)) {
+            BaseView::setFlash('Fichier introuvable sur le serveur', 'error');
+            header('Location: ?page=profil');
+            exit;
+        }
+
+        // Get file extension to set proper content type
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $contentType = 'application/octet-stream';
+        
+        switch ($extension) {
+            case 'pdf':
+                $contentType = 'application/pdf';
+                break;
+            case 'doc':
+                $contentType = 'application/msword';
+                break;
+            case 'docx':
+                $contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                break;
+        }
+
+        // Force download
+        header('Content-Type: ' . $contentType);
+        header('Content-Disposition: attachment; filename="' . $document['nom_document'] . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: public');
+        
+        // Clear output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        readfile($filePath);
         exit;
     }
 
@@ -274,7 +325,7 @@ class ProfilController
 
         if (!$documentId) {
             BaseView::setFlash('Document introuvable', 'error');
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
@@ -283,7 +334,7 @@ class ProfilController
 
         if (!$document) {
             BaseView::setFlash('Document introuvable ou accès refusé', 'error');
-            header('Location: ?page=profil&action=documents');
+            header('Location: ?page=profil');
             exit;
         }
 
@@ -300,7 +351,7 @@ class ProfilController
             BaseView::setFlash('Erreur lors de la suppression du document', 'error');
         }
 
-        header('Location: ?page=profil&action=documents');
+        header('Location: ?page=profil');
         exit;
     }
 
@@ -342,6 +393,37 @@ class ProfilController
         }
 
         header('Location: ?page=profil&action=edit');
+        exit;
+    }
+
+    /**
+     * Obtenir les documents (AJAX)
+     */
+    public function getDocuments()
+    {
+        header('Content-Type: application/json');
+
+        // Vérifier que l'utilisateur est connecté
+        if (!isset($_SESSION['user']['id'])) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Non authentifié'
+            ]);
+            exit;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        $documents = $this->model->getUserDocuments($userId);
+
+        ob_start();
+        $this->view->renderDocuments($documents);
+        $html = ob_get_clean();
+
+        echo json_encode([
+            'success' => true,
+            'html' => $html,
+            'count' => count($documents)
+        ]);
         exit;
     }
 
@@ -435,37 +517,6 @@ class ProfilController
         }
 
         return ['success' => false, 'message' => 'Erreur lors de l\'upload du fichier'];
-    }
-
-    /**
-     * Obtenir les documents (AJAX)
-     */
-    public function getDocuments()
-    {
-        header('Content-Type: application/json');
-
-        // Vérifier que l'utilisateur est connecté
-        if (!isset($_SESSION['user']['id'])) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Non authentifié'
-            ]);
-            exit;
-        }
-
-        $userId = $_SESSION['user']['id'];
-        $documents = $this->model->getUserDocuments($userId);
-
-        ob_start();
-        $this->view->renderDocuments($documents);
-        $html = ob_get_clean();
-
-        echo json_encode([
-            'success' => true,
-            'html' => $html,
-            'count' => count($documents)
-        ]);
-        exit;
     }
 }
 ?>

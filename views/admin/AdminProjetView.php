@@ -1,10 +1,10 @@
 <?php
-// ⭐ AJOUT: Import PermissionHelper
+
 require_once __DIR__ . '/../../utils/PermissionHelper.php';
 
 require_once __DIR__ . '/../BaseView.php';
 
-// Import Generic Framework Components
+// Import  Components
 require_once __DIR__ . '/../components/Button.php';
 require_once __DIR__ . '/../components/Badge.php';
 require_once __DIR__ . '/../components/Breadcrumb.php';
@@ -41,7 +41,7 @@ class AdminProjetView extends BaseView
                     <h1><i class="fas fa-project-diagram"></i> Gestion des Projets</h1>
                     <div style="display: flex; gap: 1rem;">
                         <?php 
-                        // ⭐ AJOUT: Check permission pour voir les stats
+                        //  Check permission pour voir les stats
                         if (hasPermission('view_projet_stats')): 
                             Button::render([
                                 'text' => 'Statistiques',
@@ -53,7 +53,7 @@ class AdminProjetView extends BaseView
                         ?>
                         
                         <?php 
-                        // ⭐ AJOUT: Check permission pour créer un projet
+                        // Check permission pour créer un projet
                         if (hasPermission('create_projet')): 
                             Button::render([
                                 'text' => 'Nouveau Projet',
@@ -66,26 +66,7 @@ class AdminProjetView extends BaseView
                     </div>
                 </div>
 
-                <!-- Stats -->
-                <div class="stats-grid">
-                    <?php
-                    StatCard::render([
-                        'value' => count($projets),
-                        'label' => 'Total Projets',
-                        'icon' => 'fas fa-project-diagram',
-                        'color' => 'var(--primary-color)'
-                    ]);
-
-                    foreach ($stats['par_statut'] as $stat) {
-                        StatCard::render([
-                            'value' => $stat['total'],
-                            'label' => $stat['nom_statut'],
-                            'icon' => 'fas fa-tasks',
-                            'color' => 'var(--accent-color)'
-                        ]);
-                    }
-                    ?>
-                </div>
+               
 
                 <!-- Table -->
                 <?php
@@ -93,11 +74,11 @@ class AdminProjetView extends BaseView
                     'headers' => ['ID', 'Titre', 'Responsable', 'Thématique', 'Statut', 'Date début', 'Actions'],
                     'rows' => $projets
                 ], function ($p) {
-                    // ⭐ AJOUT: Vérifier si l'utilisateur est le responsable
+                    //  Vérifier si l'utilisateur est le responsable
                     $isResponsable = isset($_SESSION['user']) && 
                                      $_SESSION['user']['id_membre'] == $p['responsable_id'];
                     
-                    // ⭐ AJOUT: Vérifier les permissions
+                    //  Vérifier les permissions
                     $canEdit = hasPermission('edit_projet') || 
                                ($isResponsable && hasPermission('edit_own_projet'));
                     
@@ -120,7 +101,7 @@ class AdminProjetView extends BaseView
                        
                         <td>
                             <?php 
-                            // ⭐ CHANGÉ: Actions conditionnelles basées sur permissions
+                            //  Actions conditionnelles basées sur permissions
                             $actions = [
                                 ['type' => 'view', 'href' => '?page=projets&action=details&id=' . $p['id_projet'], 'target' => '_blank']
                             ];
@@ -187,7 +168,7 @@ class AdminProjetView extends BaseView
 
                 <!-- PDF Export Section -->
                 <?php 
-                // ⭐ AJOUT: Check permission pour générer PDF
+             
                 if (hasPermission('generate_projet_pdf')): 
                 ?>
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -262,79 +243,77 @@ class AdminProjetView extends BaseView
                 <!-- Charts Grid -->
                 <div style="display: grid; gap: 2rem;">
 
-                    <!-- Projects by Thematic -->
-                    <?php
-                    $thematiqueData = array_map(function ($item) {
-                        return [
-                            'label' => $item['nom'],
-                            'value' => (int) $item['total']
-                        ];
-                    }, $stats['par_thematique']);
+             
 
-                    Chart::renderBar([
-                        'data' => $thematiqueData,
-                        'title' => 'Répartition des projets par thématique',
-                        'height' => 300,
-                        'orientation' => 'vertical'
-                    ]);
-                    ?>
+<!-- Projects by Thematic -->
+<?php
+$thematiqueData = array_map(function ($item) {
+    return [
+        'label' => $item['nom'] ?? $item['nom_thematique'] ?? 'Non défini',
+        'value' => (int) ($item['total'] ?? 0)
+    ];
+}, $stats['par_thematique'] ?? []);
 
-                    <!-- Two columns for smaller charts -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+Chart::renderBar([
+    'data' => $thematiqueData,
+    'title' => 'Répartition des projets par thématique',
+    'height' => 300,
+    'orientation' => 'vertical'
+]);
+?>
 
-                        <!-- Projects by Status -->
-                        <?php
-                        $statutData = array_map(function ($item) {
-                            return [
-                                'label' => $item['nom_statut'],
-                                'value' => (int) $item['total']
-                            ];
-                        }, $stats['par_statut']);
+<!-- Projects by Status -->
+<?php
+$statutData = array_map(function ($item) {
+    return [
+        'label' => $item['nom_statut'] ?? 'Non défini',
+        'value' => (int) ($item['total'] ?? 0)
+    ];
+}, $stats['par_statut'] ?? []);
 
-                        Chart::renderPie([
-                            'data' => $statutData,
-                            'title' => 'Répartition des projets par statut',
-                            'donut' => true,
-                            'size' => 200
-                        ]);
-                        ?>
+Chart::renderPie([
+    'data' => $statutData,
+    'title' => 'Répartition des projets par statut',
+    'donut' => true,
+    'size' => 200
+]);
+?>
 
-                        <!-- Projects by Year -->
-                        <?php
-                        $anneeData = array_map(function ($item) {
-                            return [
-                                'label' => $item['annee'] ?? 'N/A',
-                                'value' => (int) $item['total']
-                            ];
-                        }, $stats['par_annee']);
+<!-- Projects by Year -->
+<?php
+$anneeData = array_map(function ($item) {
+    return [
+        'label' => $item['annee'] ?? 'N/A',
+        'value' => (int) ($item['total'] ?? 0)
+    ];
+}, $stats['par_annee'] ?? []);
 
-                        Chart::renderBar([
-                            'data' => $anneeData,
-                            'title' => 'Projets par année de début',
-                            'height' => 250,
-                            'orientation' => 'horizontal'
-                        ]);
-                        ?>
-                    </div>
+Chart::renderBar([
+    'data' => $anneeData,
+    'title' => 'Projets par année de début',
+    'height' => 250,
+    'orientation' => 'horizontal'
+]);
+?>
 
-                    <!-- Projects by Responsable -->
-                    <?php if (!empty($stats['par_responsable'])): ?>
-                        <?php
-                        $responsableData = array_slice(array_map(function ($item) {
-                            return [
-                                'label' => $item['responsable_nom'],
-                                'value' => (int) $item['total']
-                            ];
-                        }, $stats['par_responsable']), 0, 10); // Top 10
-            
-                        Chart::renderBar([
-                            'data' => $responsableData,
-                            'title' => 'Top 10 des responsables par nombre de projets',
-                            'height' => 300,
-                            'orientation' => 'horizontal'
-                        ]);
-                        ?>
-                    <?php endif; ?>
+<!-- Projects by Responsable -->
+<?php if (!empty($stats['par_responsable'])): ?>
+    <?php
+    $responsableData = array_slice(array_map(function ($item) {
+        return [
+            'label' => $item['responsable_nom'] ?? 'Non défini',
+            'value' => (int) ($item['total'] ?? 0)
+        ];
+    }, $stats['par_responsable']), 0, 10); // Top 10
+
+    Chart::renderBar([
+        'data' => $responsableData,
+        'title' => 'Top 10 des responsables par nombre de projets',
+        'height' => 300,
+        'orientation' => 'horizontal'
+    ]);
+    ?>
+<?php endif; ?>
 
                 </div>
             </div>
@@ -365,7 +344,7 @@ class AdminProjetView extends BaseView
         $this->renderHeader();
         $this->renderFlashMessage();
         
-        // ⭐ AJOUT: Check permission pour gérer les membres/partenaires
+        
         $canManageMembers = hasPermission('manage_projet_members');
         ?>
 
@@ -528,7 +507,7 @@ class AdminProjetView extends BaseView
                             ?>
                         </div>
 
-                        <!-- ⭐ CHANGÉ: Team Members Section (only if has permission) -->
+                     
                         <?php if ($canManageMembers): ?>
                         <div class="form-section" style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
                             <h3 style="margin-bottom: 1rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem;">
@@ -562,7 +541,7 @@ class AdminProjetView extends BaseView
                         </div>
                         <?php endif; ?>
 
-                        <!-- ⭐ CHANGÉ: Partners Section (only if has permission) -->
+                       
                         <?php if ($canManageMembers): ?>
                         <div class="form-section" style="margin-top: 2rem; padding: 1.5rem; background: #f0f9ff; border-radius: 8px;">
                             <h3 style="margin-bottom: 1rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.5rem;">

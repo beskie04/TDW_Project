@@ -63,7 +63,7 @@ class EquipementModel extends BaseModel
      */
     public function isAvailable($equipementId, $dateDebut, $dateFin, $excludeReservationId = null)
     {
-        // ✅ SOLUTION : Utiliser des placeholders uniques
+        
         $sql = "SELECT COUNT(*) as total FROM reservations
             WHERE id_equipement = :id
             AND statut = 'active'";
@@ -72,7 +72,7 @@ class EquipementModel extends BaseModel
             $sql .= " AND id != :exclude_id";
         }
 
-        // ✅ Placeholders uniques : debut1, debut2, fin1, fin2
+       
         $sql .= " AND (
                 (date_debut <= :debut1 AND date_fin >= :debut2)
                 OR (date_debut <= :fin1 AND date_fin >= :fin2)
@@ -117,7 +117,7 @@ class EquipementModel extends BaseModel
                 VALUES (:equipement, :membre, :debut, :fin, 'active')";
 
         try {
-            // ✅ CORRIGÉ : execute() au lieu de query()
+         
             $success = $this->execute($sql, [
                 'equipement' => $equipementId,
                 'membre' => $membreId,
@@ -146,7 +146,7 @@ class EquipementModel extends BaseModel
                 VALUES (:equipement, :membre, :debut, :fin, :justification, 'en_attente')";
 
         try {
-            // ✅ CORRIGÉ : execute() au lieu de query()
+          
             $result = $this->execute($sql, [
                 'equipement' => $equipementId,
                 'membre' => $membreId,
@@ -249,7 +249,7 @@ class EquipementModel extends BaseModel
         }
 
         try {
-            // ✅ CORRIGÉ : execute() au lieu de query()
+       
             $this->execute($sql, $params);
 
             // Mettre à jour l'état de l'équipement si plus de réservations

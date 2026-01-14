@@ -32,7 +32,7 @@ class ProfilView extends BaseView
                         <?php
                         $photoPath = null;
                         if (!empty($profile['photo'])) {
-                            $photoPath = ASSETS_URL . 'uploads/photos/' . $profile['photo'];
+                            $photoPath = UPLOADS_URL . 'photos/' . $profile['photo'];
                         }
                         
                         Avatar::render([
@@ -77,48 +77,7 @@ class ProfilView extends BaseView
                 </div>
             </div>
 
-            <!-- Statistiques -->
-            <div class="stats-grid">
-                <div class="stat-card stat-blue">
-                    <div class="stat-icon">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><?= $profile['stats']['projets'] ?? 0 ?></h3>
-                        <p>Projets</p>
-                    </div>
-                </div>
-
-                <div class="stat-card stat-green">
-                    <div class="stat-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><?= $profile['stats']['publications'] ?? 0 ?></h3>
-                        <p>Publications</p>
-                    </div>
-                </div>
-
-                <div class="stat-card stat-orange">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><?= $profile['stats']['reservations'] ?? 0 ?></h3>
-                        <p>Réservations</p>
-                    </div>
-                </div>
-
-                <div class="stat-card stat-purple">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><?= $profile['stats']['equipes'] ?? 0 ?></h3>
-                        <p>Équipes</p>
-                    </div>
-                </div>
-            </div>
+         
 
             <!-- Onglets -->
             <div class="dashboard-tabs">
@@ -526,70 +485,371 @@ class ProfilView extends BaseView
      * Section Documents
      */
     private function renderDocumentsSection()
-    {
-        ?>
-        <div class="documents-section">
-            <div class="documents-upload">
-                <h3>Uploader un document</h3>
-                <form method="POST" action="?page=profil&action=uploadDocument" enctype="multipart/form-data">
-                    <?php
-                    FormInput::render([
-                        'label' => 'Nom du document',
-                        'name' => 'nom_document',
-                        'type' => 'text',
-                        'required' => true
-                    ]);
+{
+    ?>
+    <div class="documents-section">
+        <!-- Upload Form -->
+        <div class="documents-upload-card">
+            <h3><i class="fas fa-cloud-upload-alt"></i> Uploader un nouveau document</h3>
+            <form method="POST" action="?page=profil&action=uploadDocument" enctype="multipart/form-data" class="upload-form">
+                
+                <div class="form-group">
+                    <label for="nom_document" class="form-label">
+                        <i class="fas fa-tag"></i> Nom du document *
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nom_document"
+                        name="nom_document" 
+                        class="form-control"
+                        placeholder="Ex: CV 2024, Diplôme Master..."
+                        required
+                    >
+                </div>
 
-                    FormInput::render([
-                        'label' => 'Type de document',
-                        'name' => 'type_document',
-                        'type' => 'select',
-                        'options' => [
-                            'CV' => 'CV',
-                            'Diplôme' => 'Diplôme',
-                            'Article' => 'Article',
-                            'Rapport' => 'Rapport',
-                            'Autre' => 'Autre'
-                        ],
-                        'required' => true
-                    ]);
+                <div class="form-group">
+                    <label for="type_document" class="form-label">
+                        <i class="fas fa-folder"></i> Type de document *
+                    </label>
+                    <select id="type_document" name="type_document" class="form-control" required>
+                        <option value="">-- Sélectionnez un type --</option>
+                        <option value="CV">CV</option>
+                        <option value="Diplôme">Diplôme</option>
+                        <option value="Article">Article</option>
+                        <option value="Rapport">Rapport</option>
+                        <option value="Certificat">Certificat</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
 
-                    FormInput::render([
-                        'label' => 'Fichier (PDF, Word)',
-                        'name' => 'document',
-                        'type' => 'file',
-                        'accept' => '.pdf,.doc,.docx',
-                        'required' => true
-                    ]);
+                <div class="form-group">
+                    <label for="document" class="form-label">
+                        <i class="fas fa-file-upload"></i> Fichier *
+                    </label>
+                    <input 
+                        type="file" 
+                        id="document"
+                        name="document" 
+                        class="form-control file-input"
+                        accept=".pdf,.doc,.docx"
+                        required
+                    >
+                    <small class="form-help">
+                        <i class="fas fa-info-circle"></i> Formats acceptés: PDF, Word (DOC, DOCX) - Max 10MB
+                    </small>
+                </div>
 
-                    Button::render([
-                        'text' => 'Uploader',
-                        'type' => 'submit',
-                        'variant' => 'primary',
-                        'icon' => 'fa-upload'
-                    ]);
-                    ?>
-                </form>
-            </div>
-
-            <div id="documents-list-container">
-                <p class="loading-text"><i class="fas fa-spinner fa-spin"></i> Chargement des documents...</p>
-            </div>
+                <button type="submit" class="btn btn-primary btn-upload">
+                    <i class="fas fa-upload"></i> Uploader le document
+                </button>
+            </form>
         </div>
 
-        <script>
-            fetch('?page=profil&action=getDocuments')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('documents-list-container').innerHTML = data.html;
-                })
-                .catch(err => {
-                    document.getElementById('documents-list-container').innerHTML =
-                        '<p class="error-text">Erreur lors du chargement des documents</p>';
-                });
-        </script>
-        <?php
-    }
+        <!-- Documents List -->
+        <div class="documents-list-card">
+            <h3><i class="fas fa-folder-open"></i> Mes documents</h3>
+            <div id="documents-list-container">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Chargement des documents...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .documents-section {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 968px) {
+            .documents-section {
+                grid-template-columns: 400px 1fr;
+            }
+        }
+
+        /* Upload Card */
+        .documents-upload-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .documents-upload-card h3 {
+            color: #1f2937;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .documents-upload-card h3 i {
+            color: #1e40af;
+        }
+
+        /* Form Styles */
+        .upload-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-label i {
+            color: #1e40af;
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1e40af;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #9ca3af;
+        }
+
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            appearance: none;
+        }
+
+        .file-input {
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .file-input::file-selector-button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 6px;
+            color: #374151;
+            cursor: pointer;
+            font-weight: 500;
+            margin-right: 1rem;
+            transition: background 0.2s;
+        }
+
+        .file-input::file-selector-button:hover {
+            background: #e5e7eb;
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 0.5rem;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .form-help i {
+            margin-right: 0.25rem;
+        }
+
+        .btn-upload {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: #1e40af;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-upload:hover {
+            background: #1e3a8a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+
+        .btn-upload:active {
+            transform: translateY(0);
+        }
+
+        /* Documents List Card */
+        .documents-list-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .documents-list-card h3 {
+            color: #1f2937;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .documents-list-card h3 i {
+            color: #1e40af;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+
+        .loading-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+        }
+
+        .loading-state p {
+            margin: 0;
+        }
+
+        /* Documents List Items */
+        .documents-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .document-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+
+        .document-item:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .document-icon {
+            width: 48px;
+            height: 48px;
+            background: #fee2e2;
+            color: #dc2626;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .document-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .document-info h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            color: #1f2937;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .document-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #6b7280;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-icon:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #374151;
+        }
+
+        .btn-icon.btn-danger {
+            color: #dc2626;
+        }
+
+        .btn-icon.btn-danger:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+    </style>
+
+    <script>
+        // Load documents via AJAX
+        fetch('?page=profil&action=getDocuments')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('documents-list-container').innerHTML = data.html;
+            })
+            .catch(err => {
+                document.getElementById('documents-list-container').innerHTML = 
+                    '<div class="loading-state"><i class="fas fa-exclamation-triangle"></i><p>Erreur lors du chargement des documents</p></div>';
+            });
+    </script>
+    <?php
+}
 
  /**
      * Rendre la page d'édition du profil 
@@ -1239,46 +1499,80 @@ class ProfilView extends BaseView
     /**
      * Rendre la liste des documents (AJAX)
      */
-    public function renderDocuments($documents)
-    {
-        if (empty($documents)) {
-            EmptyState::render([
-                'icon' => 'fa-folder-open',
-                'title' => 'Aucun document',
-                'message' => 'Vous n\'avez pas encore uploadé de documents.'
-            ]);
-            return;
-        }
+ 
 
-        echo '<div class="documents-list">';
-        foreach ($documents as $doc) {
-            ?>
-            <div class="document-item">
-                <div class="document-icon">
-                    <i class="fas fa-file-pdf"></i>
-                </div>
-                <div class="document-info">
-                    <h4><?= htmlspecialchars($doc['nom_document']) ?></h4>
-                    <p>
-                        <?= htmlspecialchars($doc['type_document']) ?> • 
-                        <?= $this->formatFileSize($doc['taille_fichier']) ?> • 
-                        <?= date('d/m/Y', strtotime($doc['date_upload'])) ?>
-                    </p>
-                </div>
-                <div class="document-actions">
-                    <a href="<?= ASSETS_URL ?>uploads/documents/<?= $doc['chemin_fichier'] ?>" target="_blank" class="btn-icon" title="Télécharger">
-                        <i class="fas fa-download"></i>
-                    </a>
-                    <a href="?page=profil&action=deleteDocument&doc_id=<?= $doc['id_document'] ?>" class="btn-icon btn-danger" onclick="return confirm('Supprimer ce document ?')" title="Supprimer">
-                        <i class="fas fa-trash"></i>
-                    </a>
-                </div>
-            </div>
-            <?php
-        }
-        echo '</div>';
+
+public function renderDocuments($documents)
+{
+    if (empty($documents)) {
+        echo '<div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <p>Aucun document</p>
+            <small>Vous n\'avez pas encore uploadé de documents.</small>
+        </div>';
+        return;
     }
 
+    echo '<div class="documents-list">';
+    foreach ($documents as $doc) {
+      
+       $filePath = 'assets/uploads/documents/' . $doc['chemin_fichier'];
+       
+      
+        ?>
+        <div class="document-item">
+            <div class="document-icon">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <div class="document-info">
+                <h4><?= htmlspecialchars($doc['nom_document']) ?></h4>
+                <p>
+                    <?= htmlspecialchars($doc['type_document']) ?> • 
+                    <?= $this->formatFileSize($doc['taille_fichier']) ?> • 
+                    <?= date('d/m/Y', strtotime($doc['date_upload'])) ?>
+                </p>
+            </div>
+            <div class="document-actions">
+               
+                <a href="?page=profil&action=downloadDocument&doc_id=<?= $doc['id_document'] ?>" 
+   class="btn-icon" 
+   title="Télécharger">
+    <i class="fas fa-download"></i>
+</a>
+                <a href="?page=profil&action=deleteDocument&doc_id=<?= $doc['id_document'] ?>" 
+                   class="btn-icon btn-danger" 
+                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce document ?')" 
+                   title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        </div>
+        <?php
+    }
+    echo '</div>';
+
+    echo '<style>
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #9ca3af;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+        .empty-state p {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            color: #6b7280;
+        }
+        .empty-state small {
+            font-size: 0.9rem;
+        }
+    </style>';
+}
     /**
      * Formater la taille d'un fichier
      */

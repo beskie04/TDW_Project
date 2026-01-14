@@ -28,12 +28,12 @@ class AccueilView extends BaseView
         <main>
             <!-- Hero Slider -->
             <?php
-            // ⭐ FIX: Vérifier que $actualitesSlider est bien un tableau
+           
             if (!is_array($actualitesSlider)) {
                 $actualitesSlider = [];
             }
 
-            // ⭐ FIX: Adapter les slides selon les données reçues
+         
             $slides = array_map(function ($actu) {
                 // Déterminer le chemin de l'image selon le type
                 $imagePath = null;
@@ -55,7 +55,7 @@ class AccueilView extends BaseView
                 ];
             }, $actualitesSlider);
 
-            // ⭐ Si pas de slides, afficher un message
+            //  Si pas de slides, afficher un message
             if (empty($slides)) {
                 echo '<div style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); 
                              padding: 4rem 2rem; text-align: center; color: white;">
@@ -110,10 +110,10 @@ class AccueilView extends BaseView
 
             Grid::render(['minWidth' => '350px', 'gap' => '1.5rem'], function () use ($actualites) {
                 foreach ($actualites as $actu) {
-                    // ⭐ Sécurité: vérifier que $actu est bien un tableau
+                    //   vérifier que $actu est bien un tableau
                     if (!is_array($actu)) continue;
                     
-                    // ⭐ Déterminer le lien
+                    // Déterminer le lien
                     $link = $this->getLinkForActualite($actu);
                     $badgeColor = $this->getBadgeColorForType($actu['type'] ?? 'autre');
                     

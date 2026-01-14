@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
-// Import Generic Framework Components
+// Import  Components
 require_once __DIR__ . '/components/TextBlock.php';
 require_once __DIR__ . '/components/Section.php';
 require_once __DIR__ . '/components/Grid.php';

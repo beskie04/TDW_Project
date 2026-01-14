@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
-// Import Generic Framework Components
+// Import  Components
 require_once __DIR__ . '/components/Filter.php';
 require_once __DIR__ . '/components/FilterBar.php';
 require_once __DIR__ . '/components/SearchInput.php';
@@ -133,7 +133,7 @@ class PublicationView extends BaseView
     }
 
     /**
-     * Render single publication card - FIXED WITH CONSTANTS & SPACING
+     * Render single publication card 
      */
     private function renderPublicationCard($pub)
     {
@@ -302,7 +302,7 @@ class PublicationView extends BaseView
     }
 
     /**
-     * Get badge variant based on publication type - USES CONSTANTS
+     * Get badge variant based on publication type 
      */
     private function getTypeVariant($type)
     {

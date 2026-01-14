@@ -2,8 +2,8 @@
 // Chemins
 define('BASE_URL', 'http://localhost/lab_project/');
 define('ASSETS_URL', BASE_URL . 'assets/');
-define('UPLOADS_URL', BASE_URL . 'uploads/');
-define('UPLOADS_PATH', __DIR__ . '/../uploads/');
+define('UPLOADS_URL', ASSETS_URL . 'uploads/');  
+define('UPLOADS_PATH', __DIR__ . '/../assets/uploads/');  
 
 // Couleurs principales du thème
 define('PRIMARY_COLOR', '#2563eb');

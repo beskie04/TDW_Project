@@ -1,11 +1,7 @@
 <?php
 
 return [
-    'logo' => [
-        'text' => 'Lab Universitaire',
-        'icon' => 'fas fa-flask',
-        'url' => '?page=accueil'
-    ],
+    
     
     'menu_items' => [
         [
@@ -58,68 +54,54 @@ return [
         ]
     ],
 
-    // Items conditionnels basés sur permissions/rôles
+    
     'conditional_items' => [
+        // ADMINS
         [
             'text' => 'Administration',
             'url' => '?page=admin',
             'icon' => 'fas fa-cog',
-            'class' => 'admin-link',
+            'class' => 'btn-admin',
             'condition' => function($user) {
                 if (empty($user)) {
                     return false;
                 }
                 
-                // Admin complet
-                if ($user['role'] === 'admin' || ($user['role_systeme'] ?? '') === 'admin') {
-                    return true;
-                }
-                
-                // Utilisateur avec permissions admin
-                $adminPermissions = [
-                    'view_projets', 'create_projet', 'edit_projet', 'delete_projet',
-                    'view_publications', 'create_publication', 'edit_publication',
-                    'view_equipements', 'create_equipement', 'edit_equipement',
-                    'view_membres', 'create_membre', 'edit_membre',
-                    'view_equipes', 'create_equipe', 'edit_equipe',
-                    'view_evenements', 'create_evenement', 'edit_evenement',
-                    'view_annonces', 'create_annonce', 'edit_annonce',
-                    'view_messages', 'respond_message', 'delete_message',
-                    'view_offres', 'create_offre', 'edit_offre'
-                ];
-
-                foreach ($adminPermissions as $perm) {
-                    if (hasPermission($perm)) {
-                        return true;
-                    }
-                }
-                
-                return false;
+                // Uniquement pour les  admins
+                return ($user['role'] === 'admin' || ($user['role_systeme'] ?? '') === 'admin');
             }
         ],
-        // Vous pouvez ajouter d'autres items conditionnels ici
+        
+        // NON-ADMINS 
         [
             'text' => 'Gestion',
             'url' => '?page=admin',
             'icon' => 'fas fa-cog',
-            'class' => 'admin-link',
+            'class' => 'btn-gestion',
             'condition' => function($user) {
-                // Afficher "Gestion" au lieu de "Administration" pour les non-admins avec permissions
                 if (empty($user)) {
                     return false;
                 }
                 
+          
                 if ($user['role'] === 'admin' || ($user['role_systeme'] ?? '') === 'admin') {
-                    return false; // Admin voit "Administration" à la place
+                    return false;
                 }
                 
-                // A des permissions mais n'est pas admin
-                $adminPermissions = [
-                    'view_projets', 'create_projet', 'view_publications', 
-                    'view_equipements', 'view_membres', 'view_evenements'
+                // Vérifier si l'utilisateur a au moins une permission de gestion
+                require_once __DIR__ . '/../../utils/PermissionHelper.php';
+                
+                $managementPermissions = [
+                    // Permissions "own" (gérer ses propres contenus)
+                    'create_own_projet', 'edit_own_projet', 'delete_own_projet',
+                    'create_own_publication', 'edit_own_publication', 'delete_own_publication',
+                    
+                    // Permissions de consultation
+                    'view_projets', 'view_publications', 'view_equipements',
+                    'view_membres', 'view_equipes', 'view_evenements'
                 ];
 
-                foreach ($adminPermissions as $perm) {
+                foreach ($managementPermissions as $perm) {
                     if (hasPermission($perm)) {
                         return true;
                     }
@@ -135,12 +117,14 @@ return [
             'text' => 'Profil',
             'url' => '?page=profil',
             'icon' => 'fas fa-user',
+            'class' => 'btn-profile',
             'show_when' => 'authenticated'
         ],
         'logout' => [
             'text' => 'Déconnexion',
             'url' => '?page=logout',
             'icon' => 'fas fa-sign-out-alt',
+            'class' => 'btn-logout',
             'show_when' => 'authenticated'
         ],
         'login' => [

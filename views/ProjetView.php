@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/BaseView.php';
 
-// Import Generic Framework Components
+// Import  Components
 require_once __DIR__ . '/components/Card.php';
 require_once __DIR__ . '/components/Grid.php';
 require_once __DIR__ . '/components/Section.php';
@@ -145,7 +145,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render single project card - FIXED SPACING & CONSTANTS
+     * Render single project card 
      */
     private function renderProjetCard($projet)
     {
@@ -478,7 +478,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render member card - FIXED SPACING
+     * Render member card 
      */
     private function renderMembreCard($membre)
     {
@@ -522,7 +522,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render partner card - FIXED SPACING & CONSTANTS
+     * Render partner card 
      */
     private function renderPartenaireCard($partenaire)
     {
@@ -639,7 +639,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Render publication card - FIXED SPACING
+     * Render publication card 
      */
     private function renderPublicationCard($pub)
     {
@@ -684,7 +684,7 @@ class ProjetView extends BaseView
     }
 
     /**
-     * Get badge variant based on status - USES CONSTANTS
+     * Get badge variant based on status 
      */
     private function getStatusVariant($statut)
     {

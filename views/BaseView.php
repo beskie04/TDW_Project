@@ -31,7 +31,7 @@ class BaseView
         
 
         // HTML Head
-        $navConfig = require __DIR__ . '/config/navigation.php';
+
         $headConfig = require  __DIR__ . '/config/htmlhead.php';
         $this->htmlHead = new HtmlHead($headConfig);
     }
@@ -47,8 +47,17 @@ class BaseView
         $this->htmlHead = new HtmlHead($headConfig);
         
         $this->htmlHead->render();
+         $this->renderTopBar();
         $this->renderNavigation();
     }
+/**
+ *  Afficher la barre supérieure 
+ */
+protected function renderTopBar()
+{
+    require_once __DIR__ . '/components/TopBar.php';
+    TopBar::renderFromDatabase();
+}
 
     /**
      * Afficher la navigation
